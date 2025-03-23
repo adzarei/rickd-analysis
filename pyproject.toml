@@ -36,4 +36,4 @@ select = ["E", "F", "I", "N", "W", "B", "C4", "UP", "RUF"]
 ignore = []
 
 [tool.ruff.isort]
-known-first-party = ["src"] 
+known-first-party = ["src"]

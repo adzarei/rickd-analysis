@@ -1,41 +1,41 @@
 function [norm_ang,norm_vel,events,event,DISCRETE_VARIABLES,speedoutput,eventsflag,label] = gait_steps(neutral,dynamic,angles,velocities,hz,plots)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%   Loads the NEUTRAL and DYNAMIC data structures, divides the ANGLES and 
+%   Loads the NEUTRAL and DYNAMIC data structures, divides the ANGLES and
 %   VELOCITIES data structures into the different left and right steps and
-%   provides an index of touchdown and toeoffs (EVENTS/EVENT). The function 
-%   also outputs time normalized angles (NORM_ANG) and velocities 
-%   (NORM_VEL), gait speed (SPEEDOUTPUT), the method of  touchdown/toe off 
+%   provides an index of touchdown and toeoffs (EVENTS/EVENT). The function
+%   also outputs time normalized angles (NORM_ANG) and velocities
+%   (NORM_VEL), gait speed (SPEEDOUTPUT), the method of  touchdown/toe off
 %   detection (EVENTSFLAG), variables of interest (DISCRETE_VARIABLES)
 %   and the determined gait type (LABEL).
 %
 %  INPUTS
 %  --------
-%  NEUTRAL (struct):    Marker shell positions collected as part of 
+%  NEUTRAL (struct):    Marker shell positions collected as part of
 %                       the static trial.
 %
 %  DYNAMIC (stuct):     Marker shell positions collected as part of
 %                       the dynamic (run/walk) trial.
 %
-%  ANGLES (struct):     Angles (joint angles) structure created as an 
+%  ANGLES (struct):     Angles (joint angles) structure created as an
 %                       output from the function: gait_kinematics.
 %
-%  VELOCITIES (struct): Velocities (joint velocities) structure created as 
+%  VELOCITIES (struct): Velocities (joint velocities) structure created as
 %                       an output from the function: gait_kinematics.
 %
 %  HZ (int):        Data collection sampling frequency.
 %
-%  PLOTS (bool):    Boolean selected to generate plotted outcomes if 
+%  PLOTS (bool):    Boolean selected to generate plotted outcomes if
 %                   desired. If no second argument exists, or if PLOTS == 0
 %                   , the plotted outputs in this function are suppressed.
 %
 %
 %  OUTPUTS
 %  -------
-%  NORM_ANG (struct):   Normalized angles from touchown to takeoff across 
+%  NORM_ANG (struct):   Normalized angles from touchown to takeoff across
 %                       all retained steps.
 %
-%  NORM_VEL (struct):   Normalized velocities from touchown to takeoff 
+%  NORM_VEL (struct):   Normalized velocities from touchown to takeoff
 %                       across  all retained steps.
 %
 %  EVENTS (mat):    Matrix of frame numbers for touchdown and toeoffs.
@@ -43,17 +43,17 @@ function [norm_ang,norm_vel,events,event,DISCRETE_VARIABLES,speedoutput,eventsfl
 %  EVENT (mat):     Same matric as EVENTS but also includes midswing in
 %                   order to calculate swing variables
 %
-%  DISCRETE_VARIABLES (mat):    Contains the peaks and values of interest 
+%  DISCRETE_VARIABLES (mat):    Contains the peaks and values of interest
 %                               for reporting.
 %
-%  SPEEDOUTPUT (float): Calculated speed of lowest heel marker. 
+%  SPEEDOUTPUT (float): Calculated speed of lowest heel marker.
 %
 %  EVENTSFLAG (mat):Matrix the same size as EVENTS which indicates whether
-%                   PCA event detection was used (1) or if the default FF 
+%                   PCA event detection was used (1) or if the default FF
 %                   and FB events were used (0).
 %
-%  LABEL (str):     Returns a string which indicates whether the trial was 
-%                   a 'walk' or 'run' based on the classifier in this 
+%  LABEL (str):     Returns a string which indicates whether the trial was
+%                   a 'walk' or 'run' based on the classifier in this
 %                   function.
 %
 %  LICENSE
@@ -148,7 +148,7 @@ if plots~=0
         disp(['The subject was WALKING at ' num2str(vel) 'm/s or ' num2str(vel*3.6/1.6) 'mph' ]); disp(' ');
     else
         disp(['The subject was RUNNING at ' num2str(vel) 'm/s or ' num2str(vel*3.6/1.6) 'mph' ]); disp(' ');
-        
+
     end
 end
 
@@ -165,14 +165,14 @@ try
 catch ME
     %For a small number of people, these functions return errors, or in the
     %case of bad data... default to use FF and FB in these cases
-    
+
     evtLtd = [];
     evtRtd = [];
     evtLto = [];
     evtRto = [];
-    
+
     disp('Automated event detection failed, defaulting to foot-forward foot-back')
-    
+
     ME.message;
 end
 feature accel on
@@ -272,7 +272,7 @@ evFltd = zeros(length(L_FFi),1);
 % met... the default is to use FF
 for i = 1:length(L_FFi)
     try
-        
+
         if i > max(minx)
             break
         elseif ismember(i,minx) && mindist(minx==i)<maxadj
@@ -283,7 +283,7 @@ for i = 1:length(L_FFi)
             % Use FFi since it is more robust
             L_TD(i) = L_FFi(i);
         end
-        
+
     catch err
         err.message;
         L_TD(i) = L_FFi(i);
@@ -319,7 +319,7 @@ evFlto = zeros(length(L_FBi),1);
 % Here we replace FB indices with TO from PCA default is to use FB
 for i = 1:length(L_FBi)
     try
-        
+
         if i > max(minx)
             break
         elseif ismember(i,minx) && mindist(minx==i)<maxadj
@@ -330,7 +330,7 @@ for i = 1:length(L_FBi)
             % Use FBi since it is more robust
             L_TO(i) = L_FBi(i);
         end
-        
+
     catch err
         err.message;
         L_TO(i) = L_FBi(i);
@@ -433,7 +433,7 @@ evFrtd = zeros(length(R_FFi),1);
 % default is to use FF
 for i = 1:length(R_FFi)
     try
-        
+
         if i > max(minx)
             break
         elseif ismember(i,minx) && mindist(minx==i)<maxadj
@@ -444,7 +444,7 @@ for i = 1:length(R_FFi)
             % Use FFi since it is more robust
             R_TD(i) = R_FFi(i);
         end
-        
+
     catch err
         err.message;
         R_TD(i) = R_FFi(i);
@@ -479,7 +479,7 @@ evFrto = zeros(length(R_FBi),1);
 % Here we replace FB indices with TO from PCA default is to use FB
 for i = 1:length(R_FBi)
     try
-        
+
         if i > max(minx)
             break
         elseif ismember(i,minx) && mindist(minx==i)<=maxadj
@@ -490,7 +490,7 @@ for i = 1:length(R_FBi)
             % Use FBi since it is more robust
             R_TO(i) = R_FBi(i);
         end
-        
+
     catch err
         err.message;
         R_TO(i) = R_FBi(i);
@@ -528,7 +528,7 @@ if L_block_start < R_block_start
             flag = 1;
         end
     end
-    
+
     L_TD(cut_inds,:) = [];
     L_TO(cut_inds,:) = [];
     clear cut_inds
@@ -558,22 +558,22 @@ R_TD = R_TD(unique(minx));
 
 testlength = min([length(L_TO) length(R_TD)]);
 if median(L_TO(1:testlength)-R_TD(1:testlength))<0 % Then there is a flight phase
-    
+
     % Find the closest ordered pairs of R_TD and R_TO to synchronize steps
     closest = abs(repmat(R_TO(:),1,length(R_TD))-repmat(R_TD(:)',length(R_TO),1));
     [~,minx] = nanmin(closest,[],1);
     evFrto = evFrto(unique(minx));
     R_TO = R_TO(unique(minx));
-    
+
 else % There is no flight phase i.e. grounded running or walking
-    
+
     % Find the closest ordered pairs of R_TO and L_TD to synchronize steps
     tmp = L_TD(2:end);
     closest = abs(repmat(R_TO(:),1,length(tmp))-repmat(tmp(:)',length(R_TO),1));
     [~,minx] = nanmin(closest,[],1);
     evFrto = evFrto(unique(minx));
     R_TO = R_TO(unique(minx));
-    
+
 end
 
 
@@ -642,23 +642,23 @@ end
 % Worst-case... return to foot forward, foot back detection
 if size(events,1) < 5
     disp('Automated event detection failed, defaulting to foot-forward foot-back')
-    
+
     events = [length(L_FFi),length(L_FBi),length(R_FFi),length(R_FBi)];
-    
+
     % Chop everything to the same length
     L_FFi = L_FFi(1:min(events));
     L_FBi = L_FBi(1:min(events));
     R_FFi = R_FFi(1:min(events));
     R_FBi = R_FBi(1:min(events));
-    
+
     events = nan(min(events),4);
     events(:,1)=L_FFi;
     events(:,2)=L_FBi;
     events(:,3)=R_FFi;
     events(:,4)=R_FBi;
-    
+
     eventsflag = zeros(size(events));
-    
+
 end
 
 
@@ -700,31 +700,31 @@ for i=1:length(L_TD)
     norm_ang.L_ankle(:,i,:) = interp1(0:(L_TO(i)-L_TD(i)),angles.L_ankle(L_TD(i):L_TO(i),:),0:(L_TO(i)-L_TD(i))/100:(L_TO(i)-L_TD(i)),'pchip');
     norm_ang.L_knee(:,i,:) = interp1(0:(L_TO(i)-L_TD(i)),angles.L_knee(L_TD(i):L_TO(i),:),0:(L_TO(i)-L_TD(i))/100:(L_TO(i)-L_TD(i)),'pchip');
     norm_ang.L_hip(:,i,:) = interp1(0:(L_TO(i)-L_TD(i)),angles.L_hip(L_TD(i):L_TO(i),:),0:(L_TO(i)-L_TD(i))/100:(L_TO(i)-L_TD(i)),'pchip');
-    
+
     norm_ang.L_foot(:,i,:) = interp1(0:(L_TO(i)-L_TD(i)),angles.L_foot(L_TD(i):L_TO(i),:),0:(L_TO(i)-L_TD(i))/100:(L_TO(i)-L_TD(i)),'pchip');
     norm_ang.L_pelvis(:,i,:) = interp1(0:(L_TO(i)-L_TD(i)),angles.pelvis(L_TD(i):L_TO(i),:),0:(L_TO(i)-L_TD(i))/100:(L_TO(i)-L_TD(i)),'pchip');
-    
+
     norm_vel.L_ankle(:,i,:) = interp1(0:(L_TO(i)-L_TD(i)),velocities.L_ankle(L_TD(i):L_TO(i),:),0:(L_TO(i)-L_TD(i))/100:(L_TO(i)-L_TD(i)),'pchip');
     norm_vel.L_knee(:,i,:) = interp1(0:(L_TO(i)-L_TD(i)),velocities.L_knee(L_TD(i):L_TO(i),:),0:(L_TO(i)-L_TD(i))/100:(L_TO(i)-L_TD(i)),'pchip');
     norm_vel.L_hip(:,i,:) = interp1(0:(L_TO(i)-L_TD(i)),velocities.L_hip(L_TD(i):L_TO(i),:),0:(L_TO(i)-L_TD(i))/100:(L_TO(i)-L_TD(i)),'pchip');
     norm_vel.L_pelvis(:,i,:) = interp1(0:(L_TO(i)-L_TD(i)),velocities.pelvis(L_TD(i):L_TO(i),:),0:(L_TO(i)-L_TD(i))/100:(L_TO(i)-L_TD(i)),'pchip');
-    
+
     norm_pos.L_heel(:,i,:) = interp1(0:(L_TO(i)-L_TD(i)),L_heel(L_TD(i):L_TO(i),:),0:(L_TO(i)-L_TD(i))/100:(L_TO(i)-L_TD(i)),'pchip');
-    
+
 end
 for i=1:length(R_TD)
     norm_ang.R_ankle(:,i,:) = interp1(0:(R_TO(i)-R_TD(i)),angles.R_ankle(R_TD(i):R_TO(i),:),0:(R_TO(i)-R_TD(i))/100:(R_TO(i)-R_TD(i)),'pchip');
     norm_ang.R_knee(:,i,:) = interp1(0:(R_TO(i)-R_TD(i)),angles.R_knee(R_TD(i):R_TO(i),:),0:(R_TO(i)-R_TD(i))/100:(R_TO(i)-R_TD(i)),'pchip');
     norm_ang.R_hip(:,i,:) = interp1(0:(R_TO(i)-R_TD(i)),angles.R_hip(R_TD(i):R_TO(i),:),0:(R_TO(i)-R_TD(i))/100:(R_TO(i)-R_TD(i)),'pchip');
-    
+
     norm_ang.R_foot(:,i,:) = interp1(0:(R_TO(i)-R_TD(i)),angles.R_foot(R_TD(i):R_TO(i),:),0:(R_TO(i)-R_TD(i))/100:(R_TO(i)-R_TD(i)),'pchip');
     norm_ang.R_pelvis(:,i,:) = interp1(0:(R_TO(i)-R_TD(i)),angles.pelvis(R_TD(i):R_TO(i),:),0:(R_TO(i)-R_TD(i))/100:(R_TO(i)-R_TD(i)),'pchip');
-    
+
     norm_vel.R_ankle(:,i,:) = interp1(0:(R_TO(i)-R_TD(i)),velocities.R_ankle(R_TD(i):R_TO(i),:),0:(R_TO(i)-R_TD(i))/100:(R_TO(i)-R_TD(i)),'pchip');
     norm_vel.R_knee(:,i,:) = interp1(0:(R_TO(i)-R_TD(i)),velocities.R_knee(R_TD(i):R_TO(i),:),0:(R_TO(i)-R_TD(i))/100:(R_TO(i)-R_TD(i)),'pchip');
     norm_vel.R_hip(:,i,:) = interp1(0:(R_TO(i)-R_TD(i)),velocities.R_hip(R_TD(i):R_TO(i),:),0:(R_TO(i)-R_TD(i))/100:(R_TO(i)-R_TD(i)),'pchip');
     norm_vel.R_pelvis(:,i,:) = interp1(0:(R_TO(i)-R_TD(i)),velocities.pelvis(R_TD(i):R_TO(i),:),0:(R_TO(i)-R_TD(i))/100:(R_TO(i)-R_TD(i)),'pchip');
-    
+
     norm_pos.R_heel(:,i,:) = interp1(0:(R_TO(i)-R_TD(i)),R_heel(R_TD(i):R_TO(i),:),0:(R_TO(i)-R_TD(i))/100:(R_TO(i)-R_TD(i)),'pchip');
 end
 
@@ -762,7 +762,7 @@ close(findobj('tag', 'drop_the_bad_temp_figure'));
 %% pick off max and mins for the DISCRETE_VARIABLES automated report file
 % MORE ROBUST WITH MEDIANS RATHER THAN MEANS
 %
-% Note some variables will remain empty. These were used a placeholders 
+% Note some variables will remain empty. These were used a placeholders
 % incase those variables were determined to be of interest at a later date
 
 DISCRETE_VARIABLES = zeros(77,3);
@@ -947,9 +947,9 @@ if plots~=0
     R_pro=round(median(R_pros)); R_sup=round(median(R_sups));
     x=0:100; y=nanmean(norm_ang.L_ankle(:,:,1),2)'; sd=std(norm_ang.L_ankle(:,:,1),1,2)';
     x2=0:100; y2=-nanmean(norm_ang.R_ankle(:,:,1),2)'; sd2=std(norm_ang.R_ankle(:,:,1),1,2)';
-    
+
     figure('tag', 'steps_temp_figure'); hold on;
-    
+
     fill([x,flip(x,2)],[(y+sd),flip((y-sd),2)], ...
         [6 6 7]/8, 'EdgeColor', 'none', 'facealpha', 0.2);
     fill([L_pro-1:L_sup-1,flip(L_pro-1:L_sup-1,2)],...
@@ -957,7 +957,7 @@ if plots~=0
         [3 3 7]/8, 'EdgeColor', 'none', 'facealpha', 0.2);
     plot(x,y,'b','LineWidth',1);
     plot(L_pro-1:L_sup-1,nanmean(norm_ang.L_ankle(L_pro:L_sup,:,1),2)','b','LineWidth',2);
-    
+
     fill([x2,flip(x2,2)],[(y2+sd2),flip((y2-sd2),2)], ...
         [7 6 6]/8, 'EdgeColor', 'none', 'facealpha', 0.2);
     fill([R_pro-1:R_sup-1,flip(R_pro-1:R_sup-1,2)],...
@@ -1173,7 +1173,7 @@ DISCRETE_VARIABLES(51,3) = - median(temp(1,:));
 if plots ~=0; figure('tag', 'steps_temp_figure');
     subplot(211); hold on; plot(norm_ang.L_foot(:,:,2),'y'); plot(20:50,norm_ang.L_foot(20:50,:,2),'c');title('LEFT FOOT MEAN PROGRESSION ANGLE')
     subplot(212); hold on; plot(-norm_ang.R_foot(:,:,2),'y'); plot(20:50,-norm_ang.R_foot(20:50,:,2),'c');title('RIGHT FOOT MEAN PROGRESSION ANGLE')
-    
+
     a=[20,50];b=[-DISCRETE_VARIABLES(51,2),-DISCRETE_VARIABLES(51,2)];c=[DISCRETE_VARIABLES(51,3),DISCRETE_VARIABLES(51,3)];
     subplot(211); hold on; line(a,b,'linewidth',3);
     subplot(212); hold on; line(a,c,'linewidth',3,'color','r');
@@ -1433,15 +1433,15 @@ filtered_pelvis = filtfilt(B,A,dynamic.pelvis_4);
 % filtered_R_foot = filtfilt(B,A,dynamic.R_foot_4);
 
 try
-    
+
     [vertical_oscillation] = oscillation(filtered_pelvis, L_TD, L_TO, R_TD, R_TO, plots, label);
-    
+
     DISCRETE_VARIABLES(77,2) = median(vertical_oscillation(:,2));
     DISCRETE_VARIABLES(77,3) = median(vertical_oscillation(:,4));
 catch ME
-    
+
     error('Error calculating vertical oscillation');
-    
+
 end
 %% plot the curves that the discrete variables come from
 
@@ -1513,7 +1513,7 @@ ml = mean(L_data,2);
 sdl = std(L_data,1,2);
 
 while change(end) > 0
-    
+
     for j = 1:length(L_data(1,:,1)) % number of steps
         if sum(j == L_bad) == 1 % has the step already been flagged as 'bad'?
             break % if so, skip it
@@ -1541,11 +1541,11 @@ while change(end) > 0
             end
         end
     end
-    
+
     % remove the leading zero
     L_bad = L_bad(2:end);
     L_good = L_good(2:end);
-    
+
     % an additional catch for the situation where there are two
     % groups of data that are very seperate such that 3*SD doesn't work
     % The data are split into groups using a histogram. If there are only 2
@@ -1570,17 +1570,17 @@ while change(end) > 0
             end
         end
     end
-    
+
     % add the leading zeros back in ... had to be a better way to do this ...
     L_bad = [0,L_bad];
     L_good = [0,L_good];
-    
+
     count = [count,length(L_bad)];
     change = diff(count);
-    
+
     ml = mean(L_data(:,L_good(2:end),:),2);
     sdl = std(L_data(:,L_good(2:end),:),1,2);
-    
+
 end
 
 % and remove the leading zero
@@ -1598,7 +1598,7 @@ mr = mean(R_data,2);
 sdr = std(R_data,1,2);
 
 while change(end) > 0
-    
+
     for j = 1:length(R_data(1,:,1)) % number of steps
         if sum(j == R_bad) == 1 % has the step already been flagged as 'bad'?
             break % if so, skip it
@@ -1626,11 +1626,11 @@ while change(end) > 0
             end
         end
     end
-    
+
     % remove the leading zero
     R_bad = R_bad(2:end);
     R_good = R_good(2:end);
-    
+
     % an additional catch for the situation where there are two
     % groups of data that are very seperate such that 3*SD doesn't work
     % The data are split into groups using a histogram. If there are only 2
@@ -1655,17 +1655,17 @@ while change(end) > 0
             end
         end
     end
-    
+
     % add the leading zeros back in ... had to be a better way to do this ...
     R_bad = [0,R_bad];
     R_good = [0,R_good];
-    
+
     count = [count,length(R_bad)];
     change = diff(count);
-    
+
     mr = mean(R_data(:,R_good(2:end),:),2);
     sdr = std(R_data(:,R_good(2:end),:),1,2);
-    
+
 end
 
 % and remove the leading zero
@@ -1693,7 +1693,7 @@ if plots ~= 0
     fill([0:100,flip(0:100,2)],[(ml(:,:,3)+sdl(:,:,3))',(flip((ml(:,:,3)-sdl(:,:,3)),1))'],[4 4 4]/8, 'EdgeColor', 'none', 'facealpha', 0.5);
     fill([0:100,flip(0:100,2)],[(ml(:,:,3)+2*sdl(:,:,3))',(flip((ml(:,:,3)-2*sdl(:,:,3)),1))'],[5 5 5]/8, 'EdgeColor', 'none', 'facealpha', 0.5);
     fill([0:100,flip(0:100,2)],[(ml(:,:,3)+3*sdl(:,:,3))',(flip((ml(:,:,3)-3*sdl(:,:,3)),1))'],[6 6 6]/8, 'EdgeColor', 'none', 'facealpha', 0.5);
-    
+
     subplot(322); plot(0:100,RG(:,:,1),'b');hold on;plot(0:100,RB(:,:,1),'r');title('SELECTED RIGHT ANGLES - X')
     fill([0:100,flip(0:100,2)],[(mr(:,:,1)+sdr(:,:,1))',(flip((mr(:,:,1)-sdr(:,:,1)),1))'],[4 4 4]/8, 'EdgeColor', 'none', 'facealpha', 0.5);
     fill([0:100,flip(0:100,2)],[(mr(:,:,1)+2*sdr(:,:,1))',(flip((mr(:,:,1)-2*sdr(:,:,1)),1))'],[5 5 5]/8, 'EdgeColor', 'none', 'facealpha', 0.5);
@@ -1717,7 +1717,7 @@ end
 function [ FFi_mod, FBi_mod, block_start, block_end ] = largest_block( FFi, FBi)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Function LARGEST_BLOCK loads in  the foot forward/foot back indices 
+% Function LARGEST_BLOCK loads in  the foot forward/foot back indices
 % (FFi, FBi) and  outputs the longest chunk of continuous events from the
 % initial index (FFi_mod, FBi_mod).
 % Function also outputs the index of the start/end of the entire continuous
@@ -1725,7 +1725,7 @@ function [ FFi_mod, FBi_mod, block_start, block_end ] = largest_block( FFi, FBi)
 %
 % This function is necessary as there are many reason why either a FF or FB
 % event could be missed. An imbalanced index (more FFs or more FBs) causes
-% many downstream problems with the code. 
+% many downstream problems with the code.
 %
 %
 %  INPUTS
@@ -1735,11 +1735,11 @@ function [ FFi_mod, FBi_mod, block_start, block_end ] = largest_block( FFi, FBi)
 %
 %  OUTPUTS
 %  -------
-%  FFI_MOD/FBI_MOD (mat):   Abbreviated index of foot-forward/foot-events 
-%                           containing only the longest set of continuous 
-%                           events.       
+%  FFI_MOD/FBI_MOD (mat):   Abbreviated index of foot-forward/foot-events
+%                           containing only the longest set of continuous
+%                           events.
 %
-%  BLOCK_START/BLOCK_END (int): Frame index of when the largest block of 
+%  BLOCK_START/BLOCK_END (int): Frame index of when the largest block of
 %                               continuous events begins and ends
 
 % Copyright (C) 2016-2023 Allan Brett and The Running Injury Clinic
@@ -1768,23 +1768,23 @@ longest_length =0;
 %first while loop adds up the length of a continuous segments adding in the
 %indicies that are skipped (because they contain the dicontinuity)
 while (sum(longest_length)+skip < size(allsort_bak,1)) && size(allsort,1)>1
-    
+
     idx_skip = 0;
-    
+
     %points, in case of two 1s run below
     k = 1;
-    
+
     %allsort must start with a 0
     while allsort(1,2) == 1
         allsort(1,:) = [];
         %skip is an overall counter for the main while loop in
         %conjuction with longest_length
         skip = skip+1;
-        
+
         %idx_skip keeps track of when values are skipped for the
         %purpose of indexing
         idx_skip = idx_skip+ 1;
-        
+
         %remove discontinuities occuring at the start of allsort
         while allsort(k,2)==allsort(k+1,2) && k+1<size(allsort,1)
             allsort(k:k+1,:) = [];
@@ -1792,14 +1792,14 @@ while (sum(longest_length)+skip < size(allsort_bak,1)) && size(allsort,1)>1
             idx_skip = idx_skip + 2;
         end
     end
-    
+
     k = 2;
     while k <= length(allsort) && mean(allsort(1:2:k,2)) == 0 && mean(allsort(2:2:k,2)) == 1
         k = k + 2;
     end
-    
+
     i=i+1;
-    
+
     %we don't want to use a possibly erroneous point in the data and we
     %must end the sequence on a 1, so when the dicontinuity occurs with two
     %1s in a row, we must roll back by 2
@@ -1810,12 +1810,12 @@ while (sum(longest_length)+skip < size(allsort_bak,1)) && size(allsort,1)>1
             allsort = allsort(1:k-2,:);
         end
     end
-    
+
     %for the special case where there are two discontinuities of 0s in a row
     if k == 2 && allsort(1,2) == 0
         allsort(1:2,:) = [];
         longest_length(i,1) = 0;
-        
+
         %we want to index one passed the discontinuity
         if i == 1
             %if this occurs for the first index, only includes values
@@ -1827,20 +1827,20 @@ while (sum(longest_length)+skip < size(allsort_bak,1)) && size(allsort,1)>1
             index(2,i) = index(2,i-1)+idx_skip+1;
         end
         skip = skip + 2;
-        
+
     else
-        
+
         %otherwise count as normal
         longest_length(i,1) = size(allsort,1);
-        
-        
+
+
         %create ordered index of where continuous chunks occur
         if i == 1
             index(1,1) = 1 + idx_skip;
             index(2,1) = longest_length(i,1)+idx_skip;
         else
             index(1,i) = index(2,i-1)+3+idx_skip;
-            
+
             %Longest_length can only be 0 when
             %two discontinuities of 1s happen in a row, below accounts that
             %the index end needs to still progress by 1 (but longest_length
@@ -1851,19 +1851,19 @@ while (sum(longest_length)+skip < size(allsort_bak,1)) && size(allsort,1)>1
                 index(2,i) = index(1,i)+longest_length(i,1);
             end
         end
-        
-        
+
+
         %reset allsort for next loop iteration to be passed the discontinuity
         allsort = allsort_bak(index(2,i)+3:end,:);
-        
-        
+
+
         %however we want to skip passed the discontinuity to the next footfall.
         %This entails skipping the discontinuity (for example if the
         %discontinuity is two FF, we skip over these two values
-        
+
         skip = skip+ 2;
     end
-    
+
 end
 
 %determine which index has the largest continuous block
@@ -1888,7 +1888,7 @@ end
 
 function [output ] = oscillation(trsegment,L_FFi, L_FBi, R_FFi, R_FBi, plots, label)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% FUNCTION oscillation_run reads in a desired cluster and calculates its 
+% FUNCTION oscillation_run reads in a desired cluster and calculates its
 % oscillation in the veritcal plane.
 %
 %
@@ -1935,56 +1935,56 @@ A= [length(L_FFi), length(R_FFi), length(R_FBi), length(L_FBi)];
 %causes errors. Similarly, ignore the last touchdown
 
 for k = 1:min(A)-1
-    
+
     %define moving window, window from touchdown to
     %touchdown for each foot, add in 10 frame cushion
-    
+
     if strcmp(label,'run')
-        
+
         l_window = [L_FFi(k);L_FBi(k)+25];
         r_window = [R_FFi(k);R_FBi(k)+25] ;
-        
+
     elseif strcmp(label,'walk')
-        
+
         l_window = [L_FFi(k)-10;R_FFi(k)-5];
         r_window = [R_FFi(k)-10;L_FFi(k+1)-5] ;
-        
+
     end
-    
-    
+
+
     %track peaks/troughs for each approximate stride
     left = running_segment(l_window(1,1):l_window(2,1));
     right = running_segment(r_window(1,1):r_window(2,1));
-    
+
     [left_peak, left_peak_loc ] = findpeaks(left);
     [right_peak, right_peak_loc ] = findpeaks(right);
     [left_trough, left_trough_loc ] = findpeaks(-left);
     [right_trough, right_trough_loc ] = findpeaks(-right);
-    
+
     %Occasionally an error in touchdown or toe-off index can lead to the
     %window being incorrect, this leads to multiple or no peaks. When this
     %occurs, return NaN and move on.
     if size(left_peak,1) ~= 1 || size(right_peak,1) ~= 1 || size(right_trough,1) ~=  1 || size(left_trough,1) ~= 1
-        
+
         build = build + 1;
         peak_locs(build)=NaN;
         trough_locs(build) = NaN;
         peaks(build)=NaN;
         trough(build) = NaN;
-        
+
         build = build+1;
         peak_locs(build) = NaN;
         trough_locs(build) = NaN;
         peaks(build)=NaN;
         trough(build) = NaN;
-        
-        
-        
+
+
+
     else
-        
-        
+
+
         %check for inflection points instead of peaks
-        
+
         for x = 1:length(left_peak)
             check_l_peak(x)  = find(left == left_peak(x));
             if left(check_l_peak(x)) < left(check_l_peak(x) + 1)
@@ -1992,7 +1992,7 @@ for k = 1:min(A)-1
                 left_peak_loc(x) = 0;
             end
         end
-        
+
         for x = 1:length(right_peak)
             check_r_peak(x)  = find(right == right_peak(x));
             if right(check_r_peak(x)) < right(check_r_peak(x) + 1)
@@ -2000,7 +2000,7 @@ for k = 1:min(A)-1
                 right_peak_loc(x) = 0;
             end
         end
-        
+
         for x = 1:length(left_trough)
             check_l_trough(x)  = find(-left == left_trough(x));
             if left(check_l_trough(x)) > left(check_l_trough(x) + 1)
@@ -2008,7 +2008,7 @@ for k = 1:min(A)-1
                 left_trough_loc(x) = 0;
             end
         end
-        
+
         for x = 1:length(right_trough)
             check_r_trough(x)  = find(-right == right_trough(x));
             if right(check_r_trough(x)) > right(check_r_trough(x) + 1)
@@ -2016,7 +2016,7 @@ for k = 1:min(A)-1
                 right_trough_loc(x) = 0;
             end
         end
-        
+
         %build peaks and troughs matrices by stacking right and lefts
         %this is necessary for confirming alternating status below
         build = build + 1;
@@ -2024,13 +2024,13 @@ for k = 1:min(A)-1
         trough_locs(build) = left_trough_loc + L_FFi(k)-1;
         peaks(build)=left_peak;
         trough(build) = -left_trough;
-        
+
         build = build+1;
         peak_locs(build) = right_peak_loc+R_FFi(k)-1;
         trough_locs(build) = right_trough_loc+R_FFi(k)-1;
         peaks(build)=right_peak;
         trough(build) = -right_trough;
-        
+
     end
 end
 
@@ -2074,9 +2074,9 @@ trough = allsort(allsort(:,2)==1,3);
 if plots ~=0
     %plot the curves
     figure
-    
+
     %include offset caused by chopping by first left footfall
-    
+
     for i = 1:length(running_segment)
         if i == 1
             x_axis(i) = L_FFi(1);
@@ -2084,21 +2084,21 @@ if plots ~=0
             x_axis(i) = x_axis(i-1) + 1;
         end
     end
-    
+
     title('Vertical')
-    
+
     plot (running_segment_bak)
     hold on
     plot(trough_locs,trough, 'r.')
     plot (peak_locs,peaks, 'g.')
-    
+
     %plot touchdown/toeoffs as well
     for p=1:min(A)-1
         fill([L_FFi(p,1),L_FBi(p,1),L_FBi(p,1),L_FFi(p,1)],[bot, bot, top, top], ...
             [3 3 7]/8, 'EdgeColor','none','facealpha',0.2);
         fill([R_FFi(p,1),R_FBi(p,1),R_FBi(p,1),R_FFi(p,1)],[bot, bot, top, top], ...
             [7 3 3]/8, 'EdgeColor','none','facealpha',0.2);
-        
+
     end
     hold off
 end
@@ -2139,12 +2139,11 @@ right_check_nan = sum(isnan(right_stance));
 right_check_num = sum(~isnan(right_stance));
 
 if left_check_nan > left_check_num || right_check_nan > right_check_num
-    
+
     error('Number of rejected strides for vertical oscillation too high')
-    
+
 end
 
 clear allsort peak_locs peaks trough trough_locs balance oscillation_up oscillation_down left_ratio right_ratio R_FBi L_FBi L_FFi R_FFi
 
 end
-

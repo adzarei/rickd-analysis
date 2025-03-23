@@ -28,18 +28,18 @@ function [angles,velocities,jc,R,djc] = gait_kinematics(joints,neutral,dynamic,h
 %
 %  HZ (int):    Data collection sampling frequency.
 %
-%  PLOTS (bool):    Boolean selected to generate plotted outcomes if 
+%  PLOTS (bool):    Boolean selected to generate plotted outcomes if
 %                   desired. If no second argument exists, or if PLOTS == 0
 %                   , the plotted outputs in this function are suppressed.
 %
 %
 %  OUTPUTS
 %  -------
-%  ANGLES(struct):  Calculated joint angles. 
+%  ANGLES(struct):  Calculated joint angles.
 %
 %  VELOCITIES(struct):  Calculated joint velocities.
 %
-%  JC (struct): Calculated joint centres. 
+%  JC (struct): Calculated joint centres.
 %
 %  R (struct): Rotation matrix used to calculate joint angles.
 %
@@ -49,7 +49,7 @@ function [angles,velocities,jc,R,djc] = gait_kinematics(joints,neutral,dynamic,h
 %  -------
 %  See file LICENSE.txt
 %
-% Copyright (C) 2010-2023,  Blayne Hettinga, Allan Brett and 
+% Copyright (C) 2010-2023,  Blayne Hettinga, Allan Brett and
 %                           The Running Injury Clinic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% NOTE the Bonita Lab Coordinate system
@@ -402,10 +402,10 @@ angle.pelvis = angle.L_ankle;
 
 %%
 for i=1:length(dynamic.L_foot_1(:,1))
-    
+
     %% need to create matricies from the DYNAMIC data that has the same markers
     % as the " ac.L_foot " in the same order ... matricies for use with soderqvist
-    
+
     d.L_foot=[dynamic.L_foot_1(i,:)',dynamic.L_foot_2(i,:)',dynamic.L_foot_3(i,:)',dynamic.L_foot_4(i,:)'];
     d.R_foot=[dynamic.R_foot_1(i,:)',dynamic.R_foot_2(i,:)',dynamic.R_foot_3(i,:)',dynamic.R_foot_4(i,:)'];
     d.L_shank=[dynamic.L_shank_1(i,:)',dynamic.L_shank_2(i,:)',dynamic.L_shank_3(i,:)',dynamic.L_shank_4(i,:)'];
@@ -413,10 +413,10 @@ for i=1:length(dynamic.L_foot_1(:,1))
     d.L_thigh=[dynamic.L_thigh_1(i,:)',dynamic.L_thigh_2(i,:)',dynamic.L_thigh_3(i,:)',dynamic.L_thigh_4(i,:)'];
     d.R_thigh=[dynamic.R_thigh_1(i,:)',dynamic.R_thigh_2(i,:)',dynamic.R_thigh_3(i,:)',dynamic.R_thigh_4(i,:)'];
     d.pelvis=[dynamic.pelvis_1(i,:)',dynamic.pelvis_2(i,:)',dynamic.pelvis_3(i,:)',dynamic.pelvis_4(i,:)'];
-    
-    
+
+
     %% calculate average position of the segment markers
-    
+
     avg.d_L_foot=mean(d.L_foot,2);
     avg.d_R_foot=mean(d.R_foot,2);
     avg.d_L_shank=mean(d.L_shank,2);
@@ -424,41 +424,41 @@ for i=1:length(dynamic.L_foot_1(:,1))
     avg.d_L_thigh=mean(d.L_thigh,2);
     avg.d_R_thigh=mean(d.R_thigh,2);
     avg.d_pelvis=mean(d.pelvis,2);
-    
-    
+
+
     %% caluculate the distance from the marker posisiton to the average position
-    
+
     dif.d_L_foot=[d.L_foot(1,:) - avg.d_L_foot(1);...
         d.L_foot(2,:) - avg.d_L_foot(2);...
         d.L_foot(3,:) - avg.d_L_foot(3)];
-    
+
     dif.d_R_foot=[d.R_foot(1,:) - avg.d_R_foot(1);...
         d.R_foot(2,:) - avg.d_R_foot(2);...
         d.R_foot(3,:) - avg.d_R_foot(3)];
-    
+
     dif.d_L_shank=[d.L_shank(1,:) - avg.d_L_shank(1);...
         d.L_shank(2,:) - avg.d_L_shank(2);...
         d.L_shank(3,:) - avg.d_L_shank(3)];
-    
+
     dif.d_R_shank=[d.R_shank(1,:) - avg.d_R_shank(1);...
         d.R_shank(2,:) - avg.d_R_shank(2);...
         d.R_shank(3,:) - avg.d_R_shank(3)];
-    
+
     dif.d_L_thigh=[d.L_thigh(1,:) - avg.d_L_thigh(1);...
         d.L_thigh(2,:) - avg.d_L_thigh(2);...
         d.L_thigh(3,:) - avg.d_L_thigh(3)];
-    
+
     dif.d_R_thigh=[d.R_thigh(1,:) - avg.d_R_thigh(1);...
         d.R_thigh(2,:) - avg.d_R_thigh(2);...
         d.R_thigh(3,:) - avg.d_R_thigh(3)];
-    
+
     dif.d_pelvis=[d.pelvis(1,:) - avg.d_pelvis(1);...
         d.pelvis(2,:) - avg.d_pelvis(2);...
         d.pelvis(3,:) - avg.d_pelvis(3)];
-    
-    
+
+
     %% step three of soderkvist
-    
+
     C.L_foot = dif.d_L_foot * dif.ac_L_foot';
     C.R_foot = dif.d_R_foot * dif.ac_R_foot';
     C.L_shank = dif.d_L_shank * dif.ac_L_shank';
@@ -466,10 +466,10 @@ for i=1:length(dynamic.L_foot_1(:,1))
     C.L_thigh = dif.d_L_thigh * dif.ac_L_thigh';
     C.R_thigh = dif.d_R_thigh * dif.ac_R_thigh';
     C.pelvis = dif.d_pelvis * dif.ac_pelvis';
-    
-    
+
+
     %% step four - do a single value decomp of C
-    
+
     [P.L_foot,T.L_foot,Q.L_foot]=svd(C.L_foot);
     [P.R_foot,T.R_foot,Q.R_foot]=svd(C.R_foot);
     [P.L_shank,T.L_shank,Q.L_shank]=svd(C.L_shank);
@@ -477,10 +477,10 @@ for i=1:length(dynamic.L_foot_1(:,1))
     [P.L_thigh,T.L_thigh,Q.L_thigh]=svd(C.L_thigh);
     [P.R_thigh,T.R_thigh,Q.R_thigh]=svd(C.R_thigh);
     [P.pelvis,T.pelvis,Q.pelvis]=svd(C.pelvis);
-    
-    
+
+
     %% step five - calculate a rotation matrix
-    
+
     R_L_foot = P.L_foot * diag([1;1;det(P.L_foot*Q.L_foot')]) * Q.L_foot';
     R_R_foot = P.R_foot * diag([1;1;det(P.R_foot*Q.R_foot')]) * Q.R_foot';
     R_L_shank = P.L_shank * diag([1;1;det(P.L_shank*Q.L_shank')]) * Q.L_shank';
@@ -488,10 +488,10 @@ for i=1:length(dynamic.L_foot_1(:,1))
     R_L_thigh = P.L_thigh * diag([1;1;det(P.L_thigh*Q.L_thigh')]) * Q.L_thigh';
     R_R_thigh = P.R_thigh * diag([1;1;det(P.R_thigh*Q.R_thigh')]) * Q.R_thigh';
     R_pelvis = P.pelvis * diag([1;1;det(P.pelvis*Q.pelvis')]) * Q.pelvis';
-    
-    
+
+
     %% step six - calculate the displacement
-    
+
     dis_L_foot = avg.d_L_foot - R_L_foot * avg.ac_L_foot;
     dis_R_foot = avg.d_R_foot - R_R_foot * avg.ac_R_foot;
     dis_L_shank = avg.d_L_shank - R_L_shank * avg.ac_L_shank;
@@ -499,10 +499,10 @@ for i=1:length(dynamic.L_foot_1(:,1))
     dis_L_thigh = avg.d_L_thigh - R_L_thigh * avg.ac_L_thigh;
     dis_R_thigh = avg.d_R_thigh - R_R_thigh * avg.ac_R_thigh;
     dis_pelvis = avg.d_pelvis - R_pelvis * avg.ac_pelvis;
-    
-    
+
+
     %% combine the rotation matricies in a stack
-    
+
     R.L_foot(:,:,i)=[R_L_foot,dis_L_foot;0,0,0,1];
     R.R_foot(:,:,i)=[R_R_foot,dis_R_foot;0,0,0,1];
     R.L_shank(:,:,i)=[R_L_shank,dis_L_shank;0,0,0,1];
@@ -510,7 +510,7 @@ for i=1:length(dynamic.L_foot_1(:,1))
     R.L_thigh(:,:,i)=[R_L_thigh,dis_L_thigh;0,0,0,1];
     R.R_thigh(:,:,i)=[R_R_thigh,dis_R_thigh;0,0,0,1];
     R.pelvis(:,:,i)=[R_pelvis,dis_pelvis;0,0,0,1];
-    
+
     %% calculate segment angles
     % FOOT
     % the rotation matrix of the foot to lab (R.L_foot) is simply a
@@ -525,7 +525,7 @@ for i=1:length(dynamic.L_foot_1(:,1))
     % Also by projecting the foot into the sagital plane, we have
     % information to determine heelstrikers or FOREFOOT strikers when
     % identifying events
-    
+
     % angle of the vertical axis of the foot projected into the frontal plane
     %   from a posterior view, 'vertical vector' in the first quadrant is
     %   postitive and second quadrant is negative
@@ -537,8 +537,8 @@ for i=1:length(dynamic.L_foot_1(:,1))
     angle.L_foot(i,2) = atan(-R.L_foot(1,1,i)/sqrt(R.L_foot(2,1,i)^2 + R.L_foot(3,1,i)^2));
     % and project the long axis into the sagital plane for ID of FOREFOOT
     angle.L_foot(i,3) = atan2(R.L_foot(2,1,i),-R.L_foot(3,1,i));
-    
-    
+
+
     % angle of the vertical axis of the foot projected into the frontal plane
     %   from a posterior view, 'vertical vector' in the first quadrant is
     %   postitive and second quadrant is negative
@@ -548,47 +548,47 @@ for i=1:length(dynamic.L_foot_1(:,1))
     angle.R_foot(i,2) = atan(R.R_foot(1,1,i)/sqrt(R.R_foot(2,1,i)^2 + R.R_foot(3,1,i)^2));
     % and project the long axis into the sagital plane for ID of FOREFOOT
     angle.R_foot(i,3) = atan2(R.R_foot(2,1,i),-R.R_foot(3,1,i));
-    
-    
+
+
     % PELVIS
     % project lateral axis of pelvis
     angle.pelvis(i,1) = atan2(R.pelvis(1,3,i),R.pelvis(3,3,i)) -pi/2; %into floor plane
     angle.pelvis(i,2) = atan(R.pelvis(2,3,i)/R.pelvis(1,3,i)); %into frontal plane
     % and project anterior axis of pelvis
     angle.pelvis(i,3) = atan2(R.pelvis(2,1,i),-R.pelvis(3,1,i)); %into sagital plane
-    
+
     %% calculate joint angles
     % need rotation matrix from shank to foot ...
     % so multiply [lab to shank] with [foot to lab]
-    
+
     R.L_ankle(:,:,i) = R.L_shank(:,:,i)'*R.L_foot(:,:,i);
     R.R_ankle(:,:,i) = R.R_shank(:,:,i)'*R.R_foot(:,:,i);
     R.L_knee(:,:,i) = R.L_thigh(:,:,i)'*R.L_shank(:,:,i);
     R.R_knee(:,:,i) = R.R_thigh(:,:,i)'*R.R_shank(:,:,i);
     R.L_hip(:,:,i) = R.pelvis(:,:,i)'*R.L_thigh(:,:,i);
     R.R_hip(:,:,i) = R.pelvis(:,:,i)'*R.R_thigh(:,:,i);
-    
+
     % CARDANANGLES uses this rotation matrix to calculate angles
     %   | CzCy-SzSySx  SzCy+CzSySx  -SyCx |
     %   | -SzCx        CzCx         Sx    |
     %   | CzSy+SzCySx  SzSy-CzCySx  CyCx  |
-    
+
     angle.L_ankle(i,:) = cardanangles(R.L_ankle(:,:,i));
     angle.L_knee(i,:)  = cardanangles(R.L_knee(:,:,i));
     angle.L_hip(i,:)   = cardanangles(R.L_hip(:,:,i));
     angle.R_ankle(i,:) = cardanangles(R.R_ankle(:,:,i));
     angle.R_knee(i,:)  = cardanangles(R.R_knee(:,:,i));
     angle.R_hip(i,:)   = cardanangles(R.R_hip(:,:,i));
-    
+
     % start by calculating the x angles which are about the anterior posterior
     % axes. sine of a angle maintains the sign from -90 to +90 which should be
     % well within the physiological range of movement during gait
-    
+
     % Use atan2(a,b) which is stable from -180 to +180. need atan2(sin,cos).
     % Use elements (1,3)/cos(x) and (3,3)/cos(x) for the y axis and
     % (2,1)/cos(x) and (2,2)/cos(x) for the z axis
-    
-    
+
+
 end
 
 
@@ -617,7 +617,7 @@ velocities.pelvis=diff(angles.pelvis)*hz;
 %% plot the angles and velocities
 
 if plots ~= 0
-    
+
     figure('tag', 'bonita_kinematics_temp_figure'); hold on;
     subplot(321);plot(angles.L_ankle(:,1),'r');title('L ankle angle x')
     subplot(323);plot(angles.L_ankle(:,2),'g');title('L ankle angle y')
@@ -625,7 +625,7 @@ if plots ~= 0
     subplot(322);plot(angles.R_ankle(:,1),'r');title('R ankle angle x')
     subplot(324);plot(angles.R_ankle(:,2),'g');title('R ankle angle y')
     subplot(326);plot(angles.R_ankle(:,3),'b');title('R ankle angle z')
-    
+
     figure('tag', 'bonita_kinematics_temp_figure'); hold on;
     subplot(321);plot(angles.L_knee(:,1),'r');title('L knee angle x')
     subplot(323);plot(angles.L_knee(:,2),'g');title('L knee angle y')
@@ -633,7 +633,7 @@ if plots ~= 0
     subplot(322);plot(angles.R_knee(:,1),'r');title('R knee angle x')
     subplot(324);plot(angles.R_knee(:,2),'g');title('R knee angle y')
     subplot(326);plot(angles.R_knee(:,3),'b');title('R knee angle z')
-    
+
     figure('tag', 'bonita_kinematics_temp_figure'); hold on;
     subplot(321);plot(angles.L_hip(:,1),'r');title('L hip angle x')
     subplot(323);plot(angles.L_hip(:,2),'g');title('L hip angle y')
@@ -641,7 +641,7 @@ if plots ~= 0
     subplot(322);plot(angles.R_hip(:,1),'r');title('R hip angle x')
     subplot(324);plot(angles.R_hip(:,2),'g');title('R hip angle y')
     subplot(326);plot(angles.R_hip(:,3),'b');title('R hip angle z')
-    
+
     figure('tag', 'bonita_kinematics_temp_figure'); hold on;
     subplot(321);plot(angles.L_foot(:,1),'r');title('L foot angle project long axis onto floor')
     subplot(323);plot(angles.L_foot(:,2),'g');title('L foot angle project long axis onto frontal')
@@ -649,31 +649,31 @@ if plots ~= 0
     subplot(322);plot(angles.R_foot(:,1),'r');title('R foot angle project longs axis onto floor')
     subplot(324);plot(angles.R_foot(:,2),'g');title('R foot angle project long axis onto frontal')
     subplot(326);plot(angles.R_foot(:,3),'b');title('R foot angle project long axis onto sagital')
-    
+
     figure('tag', 'bonita_kinematics_temp_figure'); hold on;
     subplot(311);plot(angles.pelvis(:,1),'r');title('Lateral pevlis axis projected into the floor')
     subplot(312);plot(angles.pelvis(:,2),'g');title('Lateral pevlis axis projected into the frontal plane')
     subplot(313);plot(angles.pelvis(:,3),'b');title('Lateral pevlis axis projected into the sagital plane')
-    
-    
+
+
 end
 
 
 %% plot coordinate systems with markers over time
 if plots ~=0
-    
+
     figure('tag', 'bonita_kinematics_temp_figure'); hold on; axis equal;
-    
+
     rotate3d on
     xlabel('z'); ylabel('x'); zlabel('y')
-    
+
     line_length = 100;
-    
+
     for i=1:length(dynamic.L_shank_1(:,1))
         delete(get(gca,'Children'));
-        
+
         view(i/5,20);
-        
+
         plot3(dynamic.pelvis_1(i,3),dynamic.pelvis_1(i,1),dynamic.pelvis_1(i,2),'b.')
         plot3(dynamic.pelvis_2(i,3),dynamic.pelvis_2(i,1),dynamic.pelvis_2(i,2),'r.')
         plot3(dynamic.pelvis_3(i,3),dynamic.pelvis_3(i,1),dynamic.pelvis_3(i,2),'g.')
@@ -682,7 +682,7 @@ if plots ~=0
         line([temp(3),temp(3)+R.pelvis(3,1,i)*line_length], [temp(1),temp(1)+R.pelvis(1,1,i)*line_length], [temp(2),temp(2)+R.pelvis(2,1,i)*line_length],'color','r')
         line([temp(3),temp(3)+R.pelvis(3,2,i)*line_length], [temp(1),temp(1)+R.pelvis(1,2,i)*line_length], [temp(2),temp(2)+R.pelvis(2,2,i)*line_length],'color','g')
         line([temp(3),temp(3)+R.pelvis(3,3,i)*line_length], [temp(1),temp(1)+R.pelvis(1,3,i)*line_length], [temp(2),temp(2)+R.pelvis(2,3,i)*line_length],'color','b')
-        
+
         plot3(dynamic.L_thigh_1(i,3),dynamic.L_thigh_1(i,1),dynamic.L_thigh_1(i,2),'b.')
         plot3(dynamic.L_thigh_2(i,3),dynamic.L_thigh_2(i,1),dynamic.L_thigh_2(i,2),'r.')
         plot3(dynamic.L_thigh_3(i,3),dynamic.L_thigh_3(i,1),dynamic.L_thigh_3(i,2),'g.')
@@ -691,8 +691,8 @@ if plots ~=0
         line([temp(3),temp(3)+R.L_thigh(3,1,i)*line_length], [temp(1),temp(1)+R.L_thigh(1,1,i)*line_length], [temp(2),temp(2)+R.L_thigh(2,1,i)*line_length],'color','r')
         line([temp(3),temp(3)+R.L_thigh(3,2,i)*line_length], [temp(1),temp(1)+R.L_thigh(1,2,i)*line_length], [temp(2),temp(2)+R.L_thigh(2,2,i)*line_length],'color','g')
         line([temp(3),temp(3)+R.L_thigh(3,3,i)*line_length], [temp(1),temp(1)+R.L_thigh(1,3,i)*line_length], [temp(2),temp(2)+R.L_thigh(2,3,i)*line_length],'color','b')
-        
-        
+
+
         plot3(dynamic.R_thigh_1(i,3),dynamic.R_thigh_1(i,1),dynamic.R_thigh_1(i,2),'b.')
         plot3(dynamic.R_thigh_2(i,3),dynamic.R_thigh_2(i,1),dynamic.R_thigh_2(i,2),'r.')
         plot3(dynamic.R_thigh_3(i,3),dynamic.R_thigh_3(i,1),dynamic.R_thigh_3(i,2),'g.')
@@ -701,8 +701,8 @@ if plots ~=0
         line([temp(3),temp(3)+R.R_thigh(3,1,i)*line_length], [temp(1),temp(1)+R.R_thigh(1,1,i)*line_length], [temp(2),temp(2)+R.R_thigh(2,1,i)*line_length],'color','r')
         line([temp(3),temp(3)+R.R_thigh(3,2,i)*line_length], [temp(1),temp(1)+R.R_thigh(1,2,i)*line_length], [temp(2),temp(2)+R.R_thigh(2,2,i)*line_length],'color','g')
         line([temp(3),temp(3)+R.R_thigh(3,3,i)*line_length], [temp(1),temp(1)+R.R_thigh(1,3,i)*line_length], [temp(2),temp(2)+R.R_thigh(2,3,i)*line_length],'color','b')
-        
-        
+
+
         plot3(dynamic.L_shank_1(i,3),dynamic.L_shank_1(i,1),dynamic.L_shank_1(i,2),'b.')
         plot3(dynamic.L_shank_2(i,3),dynamic.L_shank_2(i,1),dynamic.L_shank_2(i,2),'r.')
         plot3(dynamic.L_shank_3(i,3),dynamic.L_shank_3(i,1),dynamic.L_shank_3(i,2),'g.')
@@ -711,10 +711,10 @@ if plots ~=0
         line([temp(3),temp(3)+R.L_shank(3,1,i)*line_length], [temp(1),temp(1)+R.L_shank(1,1,i)*line_length], [temp(2),temp(2)+R.L_shank(2,1,i)*line_length],'color','r')
         line([temp(3),temp(3)+R.L_shank(3,2,i)*line_length], [temp(1),temp(1)+R.L_shank(1,2,i)*line_length], [temp(2),temp(2)+R.L_shank(2,2,i)*line_length],'color','g')
         line([temp(3),temp(3)+R.L_shank(3,3,i)*line_length], [temp(1),temp(1)+R.L_shank(1,3,i)*line_length], [temp(2),temp(2)+R.L_shank(2,3,i)*line_length],'color','b')
-        
-        
-        
-        
+
+
+
+
         plot3(dynamic.R_shank_1(i,3),dynamic.R_shank_1(i,1),dynamic.R_shank_1(i,2),'b.')
         plot3(dynamic.R_shank_2(i,3),dynamic.R_shank_2(i,1),dynamic.R_shank_2(i,2),'r.')
         plot3(dynamic.R_shank_3(i,3),dynamic.R_shank_3(i,1),dynamic.R_shank_3(i,2),'g.')
@@ -723,8 +723,8 @@ if plots ~=0
         line([temp(3),temp(3)+R.R_shank(3,1,i)*line_length], [temp(1),temp(1)+R.R_shank(1,1,i)*line_length], [temp(2),temp(2)+R.R_shank(2,1,i)*line_length],'color','r')
         line([temp(3),temp(3)+R.R_shank(3,2,i)*line_length], [temp(1),temp(1)+R.R_shank(1,2,i)*line_length], [temp(2),temp(2)+R.R_shank(2,2,i)*line_length],'color','g')
         line([temp(3),temp(3)+R.R_shank(3,3,i)*line_length], [temp(1),temp(1)+R.R_shank(1,3,i)*line_length], [temp(2),temp(2)+R.R_shank(2,3,i)*line_length],'color','b')
-        
-        
+
+
         plot3(dynamic.L_foot_1(i,3),dynamic.L_foot_1(i,1),dynamic.L_foot_1(i,2),'b.')
         plot3(dynamic.L_foot_2(i,3),dynamic.L_foot_2(i,1),dynamic.L_foot_2(i,2),'r.')
         plot3(dynamic.L_foot_3(i,3),dynamic.L_foot_3(i,1),dynamic.L_foot_3(i,2),'g.')
@@ -733,8 +733,8 @@ if plots ~=0
         line([temp(3),temp(3)+R.L_foot(3,1,i)*line_length], [temp(1),temp(1)+R.L_foot(1,1,i)*line_length], [temp(2),temp(2)+R.L_foot(2,1,i)*line_length],'color','r')
         line([temp(3),temp(3)+R.L_foot(3,2,i)*line_length], [temp(1),temp(1)+R.L_foot(1,2,i)*line_length], [temp(2),temp(2)+R.L_foot(2,2,i)*line_length],'color','g')
         line([temp(3),temp(3)+R.L_foot(3,3,i)*line_length], [temp(1),temp(1)+R.L_foot(1,3,i)*line_length], [temp(2),temp(2)+R.L_foot(2,3,i)*line_length],'color','b')
-        
-        
+
+
         plot3(dynamic.R_foot_1(i,3),dynamic.R_foot_1(i,1),dynamic.R_foot_1(i,2),'b.')
         plot3(dynamic.R_foot_2(i,3),dynamic.R_foot_2(i,1),dynamic.R_foot_2(i,2),'r.')
         plot3(dynamic.R_foot_3(i,3),dynamic.R_foot_3(i,1),dynamic.R_foot_3(i,2),'g.')
@@ -743,10 +743,10 @@ if plots ~=0
         line([temp(3),temp(3)+R.R_foot(3,1,i)*line_length], [temp(1),temp(1)+R.R_foot(1,1,i)*line_length], [temp(2),temp(2)+R.R_foot(2,1,i)*line_length],'color','r')
         line([temp(3),temp(3)+R.R_foot(3,2,i)*line_length], [temp(1),temp(1)+R.R_foot(1,2,i)*line_length], [temp(2),temp(2)+R.R_foot(2,2,i)*line_length],'color','g')
         line([temp(3),temp(3)+R.R_foot(3,3,i)*line_length], [temp(1),temp(1)+R.R_foot(1,3,i)*line_length], [temp(2),temp(2)+R.R_foot(2,3,i)*line_length],'color','b')
-        
+
         drawnow
     end
-    
+
 end
 
 function out = cardanangles(r)

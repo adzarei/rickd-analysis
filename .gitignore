@@ -56,7 +56,7 @@ var/
 wheels/
 *.egg-info/
 .installed.cfg
-*.egg 
+*.egg
 
 # Project Specific:
 src/dump/

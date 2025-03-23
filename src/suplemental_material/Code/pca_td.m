@@ -3,7 +3,7 @@ function [evtL,evtR] = pca_td(angles,hz,gait)
 %   PCA_TD applies a pre-trained algorithm to detect touchdown events.
 %   This function takes in the ANGLES output from a giat_kinematics.m
 %   function and the sampling frequency HZ, and outputs touchdown events as
-%   determined by the Osis et al. (2014) method. 
+%   determined by the Osis et al. (2014) method.
 %
 %
 %  INPUTS
@@ -13,16 +13,16 @@ function [evtL,evtR] = pca_td(angles,hz,gait)
 %
 %  HZ (int):            Data collection sampling frequency.
 %
-%  GAIT (str):          Label for type of gait (must be either 'walk' or 
-%                       'run') which determines the model that  will be 
+%  GAIT (str):          Label for type of gait (must be either 'walk' or
+%                       'run') which determines the model that  will be
 %                       applied
 %
 %  OUTPUTS
 %  -------
 %
-%  evtL/evtR (mat):     Vectors of indices corresponding to the timing of 
-%                       touchdowns from the original ANGLES signals. 
-%                       NOTE: EVTL and EVTR are not rounded, rounding is 
+%  evtL/evtR (mat):     Vectors of indices corresponding to the timing of
+%                       touchdowns from the original ANGLES signals.
+%                       NOTE: EVTL and EVTR are not rounded, rounding is
 %                       completed in the gait_steps function.
 %
 %
@@ -97,15 +97,15 @@ bias = 0*defaultHz;
 if hz < 100
     error('Sampling frequency is less than 100 Hz. Event detection may provide inconsistent results at low sampling rates.')
 elseif hz ~= defaultHz
-    
+
     % Resample the signals to match 200 Hz for methods below
     temp = struct2cell(angles);
     for i = 1:length(temp)
         temp{i} = resample(temp{i},defaultHz,hz);
     end
-    
+
     angles = cell2struct(temp,fieldnames(angles),1);
-    
+
 end
 
 
@@ -121,9 +121,9 @@ negsig = -diff(angles.L_foot(:,3),2);
 % Create a logical index of search windows to find positive peaks
 loginds = zeros(length(negsig),1);
 for i = 1:length(locs)
-    
+
     loginds(locs(i):locs(i)+srchlgth) = 1;
-    
+
 end
 loginds = loginds(1:length(negsig));
 
@@ -188,9 +188,9 @@ hip = diff(angles.R_hip(:,3),2);
 signal = zeros(length(locs),chnklgth*8+4);
 
 for j = 2:length(locs)-1
-    
+
     signal(j,:) = [foot(locs(j)-chnklgth:locs(j)+chnklgth)' ank(locs(j)-chnklgth:locs(j)+chnklgth)' knee(locs(j)-chnklgth:locs(j)+chnklgth)' hip(locs(j)-chnklgth:locs(j)+chnklgth)'];
-    
+
 end
 
 projected = signal*coeffR;
@@ -206,5 +206,3 @@ evtR = evtR.*(hz/defaultHz);
 % to lack of data
 evtL([1 end],:) = [];
 evtR([1 end],:) = [];
-
-
