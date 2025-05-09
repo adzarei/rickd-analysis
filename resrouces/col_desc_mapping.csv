@@ -1,0 +1,27 @@
+var_name,var_short_desc,var_long_desc
+sub_id,Subject ID,Subject identification number
+datestring,Collection datetime,Date and time of data collection
+filename,Raw data file,Raw data filename
+speed_r,Running speed,Calculated running speed (m/s)
+age,Age,Subject age in years at time of collection
+Height,Height,Subject height (cm) measured at time of collection
+Weight,Weight,Subject weight (kg) measured at time of collection
+Gender,Gender,Subject self-reported gender
+DominantLeg,Dominant leg,Subject self-reported dominant leg
+InjDefn,Injury definition,"Injury definition as self-selected from 1 of 4 options: (1) No Injury, (2) Continuing to train in pain, (3) Training volume/intensity affected, (4) Minimum of two workouts missed in a row"
+InjJoint,Injury joint,Joint location of injury
+InjSide,Injury side,Injury side (right/left)
+SpecInjury,Specific injury,Specific injury diagnosis from medical professional (if applicable)
+InjDuration,Injury duration,Injury duration in days
+InjJoint2,Secondary injury joint,Secondary injury joint location (if applicable)
+InjSide2,Secondary injury side,Secondary injury side (if applicable)
+SpecInjury2,Secondary specific injury,Specific secondary injury diagnosis (if applicable)
+Activities,Other activities,Other self-reported athletic activities performed on a regular basis
+Level,Activity level,Self-reported level of athletic activity (recreational/competitive)
+YrsRunning,Years running,Number of years subject has been running on a regular basis
+RaceDistance,Race distance,Preferred race distance
+RaceTimeHrs,Race best time (hr),Preferred race distance best time (hr)
+RaceTimeMins,Race best time (min),Preferred race distance best time: (min)
+RaceTimeSecs,Race best time (sec),Preferred race distance best time: (secs)
+YrPR,Year of PR,Year of preferred race distance personal best time
+NumRaces,Number of races,Self-reported number of races completed per year
