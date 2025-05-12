@@ -22,3 +22,4 @@ def condition_report(df, df_condition: pd.Series) -> None:
 
     print("\nExample rows:")
     print(filtered_df.head().to_string())
+
