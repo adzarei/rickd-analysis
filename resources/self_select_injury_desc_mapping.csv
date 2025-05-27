@@ -1,0 +1,5 @@
+injury_name,short_code,description
+"2 workouts missed in a row","missed_2_workouts","Two consecutive missed workouts potentially indicating recovery or injury concerns."
+"continuing to train in pain","train_in_pain","Continuing exercise despite experiencing pain, risking further tissue stress or injury."
+"no injury","no_injury","No detectable biomechanical disruption or tissue damage."
+"training volume/intensity affected","volume_intensity","Training volume or intensity reduced or modified due to pain, fatigue, or recovery."
