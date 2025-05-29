@@ -10,5 +10,8 @@ RICKD_RUNNING_METADATA_CLEANED_FILE = f"{RICKD_PROCESSED_DATA_FOLDER}/run_data_m
 RICKD_SESSION_DATA_FULL_FILE = f"{RICKD_PROCESSED_DATA_FOLDER}/session_data_full.csv"
 
 RICKD_PROY_RESOURCE_FOLDER = "/Users/adrianzapaterreig/Documents/Personal/TFM/rickd-analysis/resources"
-RICKD_PROY_INJURY_CODE_MAP = f"{RICKD_PROY_RESOURCE_FOLDER}/injury_code_mapping.csv"
-RICKD_PROY_INJURY_DESC_MAP = f"{RICKD_PROY_RESOURCE_FOLDER}/injury_desc_mapping.csv"
+
+# Mapping files
+RICKD_MAP_INJURY_CODE = f"{RICKD_PROY_RESOURCE_FOLDER}/injury_code_mapping.csv"
+RICKD_MAP_INJURY_DESC = f"{RICKD_PROY_RESOURCE_FOLDER}/injury_desc_mapping.csv"
+RICKD_MAP_SELF_INJURY_CODE = f"{RICKD_PROY_RESOURCE_FOLDER}/self_select_injury_code_mapping.csv"

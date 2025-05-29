@@ -46,7 +46,7 @@ def to_lowercase(df: pd.DataFrame, cols: list[str]=None) -> pd.DataFrame:
     return df
 
 
-def map_injury_codes(df: pd.DataFrame, mapping_file_path: str, source_col: str, target_col: str) -> pd.DataFrame:
+def map_injury_codes(df: pd.DataFrame, mapping_file_path: str, source_col: str, target_col: str, map_key_col='key', map_value_col='value') -> pd.DataFrame:
     """Map injury names to standardized codes using a mapping file.
     
     Args:
@@ -60,9 +60,8 @@ def map_injury_codes(df: pd.DataFrame, mapping_file_path: str, source_col: str, 
     """
     # Read mapping file and create dictionary
     mapping_df = pd.read_csv(mapping_file_path)
-    mapping_dict = dict(zip(mapping_df['injury_name'], mapping_df['code']))
-    
-    # Create copy of input dataframe to avoid modifying original
+    mapping_dict = dict(zip(mapping_df[map_key_col], mapping_df[map_value_col]))
+
     result_df = df.copy()
     
     # Map values using the mapping dictionary
@@ -73,6 +72,6 @@ def map_injury_codes(df: pd.DataFrame, mapping_file_path: str, source_col: str, 
     if not unmapped.empty:
         print(f"Warning: Found {len(unmapped)} unmapped values in {source_col}")
         print("Example unmapped values:")
-        print(unmapped[source_col].head())
+        print(unmapped[[source_col]].head())
     
     return result_df
