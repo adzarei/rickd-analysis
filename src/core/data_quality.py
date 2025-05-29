@@ -46,7 +46,33 @@ def to_lowercase(df: pd.DataFrame, cols: list[str]=None) -> pd.DataFrame:
     return df
 
 
-if __name__ == "__main__":
-    from core.constants import RICKD_RUNNING_METADATA_FILE
-    df = pd.read_csv(RICKD_RUNNING_METADATA_FILE)
-    print(identify_conflicting_data(df, ["sub_id"], ["age", "Gender", "Height", "Weight", "DominantLeg"]))
+def map_injury_codes(df: pd.DataFrame, mapping_file_path: str, source_col: str, target_col: str) -> pd.DataFrame:
+    """Map injury names to standardized codes using a mapping file.
+    
+    Args:
+        df: Source dataframe containing injury names
+        mapping_file_path: Path to CSV file containing injury name to code mappings
+        source_col: Name of column containing injury names to map
+        target_col: Name of new column to store mapped codes
+        
+    Returns:
+        DataFrame with new column containing mapped codes
+    """
+    # Read mapping file and create dictionary
+    mapping_df = pd.read_csv(mapping_file_path)
+    mapping_dict = dict(zip(mapping_df['injury_name'], mapping_df['code']))
+    
+    # Create copy of input dataframe to avoid modifying original
+    result_df = df.copy()
+    
+    # Map values using the mapping dictionary
+    result_df[target_col] = result_df[source_col].map(mapping_dict)
+    
+    # Check for unmapped values
+    unmapped = result_df[result_df[target_col].isna() & result_df[source_col].notna()]
+    if not unmapped.empty:
+        print(f"Warning: Found {len(unmapped)} unmapped values in {source_col}")
+        print("Example unmapped values:")
+        print(unmapped[source_col].head())
+    
+    return result_df
