@@ -30,9 +30,9 @@ liga_tear_mcl,ligament tear/rupture mcl
 liga_tear_pcl,ligament tear/rupture pcl
 low_back_pain,low back pain
 medi_tibi_stre_synd,medial tibial stress syndrome
-meni_tear_med,meniscal tear-medial
 meni_tear_lat,meniscal tear-lateral
 meni_tear_med,meniscal tear medial
+meni_tear_med,meniscal tear-medial
 meta,metarsalgia
 meta_stre_frac,metatarsal stress fracture
 musc_spasm,muscle spasm
@@ -47,13 +47,13 @@ other,non-specific injury
 pain,pain
 pate_frac,patellar fracture
 pate_pain_synd,patellofemoral pain syndrome
+pate_pain_synd,pfps
 pate_tend,patellar tedonitis
 pate_tend,patellar tendonitis
 pelv_dysf_gene,pelvic dysfunction general
 pelv_mala,pelvic malalignment
 pero_tend,peroneal tendonitis
 pes_anse_burs,pes anserine bursitis
-pate_pain_synd,pfps
 piri_synd,piriformis syndrome
 plan_fasc,plantar fasciitis
 plica,plica

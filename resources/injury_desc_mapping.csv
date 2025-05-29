@@ -28,8 +28,8 @@ liga_tear_mcl,Tearing or rupture of medial knee ligament caused by lateral mecha
 liga_tear_pcl,Tearing of posterior knee ligament typically from direct impact or hyperextension.
 low_back_pain,"Pain from mechanical stress, instability, or muscle imbalance in lower spine."
 medi_tibi_stre_synd,"Inflammation along inner shin bone from repetitive force, commonly known as shin splints."
-meni_tear_med,Injury of the inner knee cartilage from twisting or repetitive stress.
 meni_tear_lat,Outer knee cartilage injury caused by twisting or abnormal biomechanical loading.
+meni_tear_med,Injury of the inner knee cartilage from twisting or repetitive stress.
 meta,Pain in ball of foot caused by excessive pressure on metatarsal bones.
 meta_stre_frac,Small cracks in foot bones due to repetitive impact or stress.
 musc_spasm,Involuntary muscle contraction due to fatigue or biomechanical stress response.
@@ -42,13 +42,12 @@ oste_pubis,Inflammation at pubic symphysis from repetitive pelvic stress or inst
 other,Unspecified biomechanical disruption or pain without clear categorization.
 pain,General sensation of discomfort signaling tissue stress or irritation without specific injury details.
 pate_frac,Broken kneecap due to direct trauma or excessive biomechanical loading.
-pate_pain_synd,Pain around kneecap from improper kneecap tracking and friction during movement.
+pate_pain_synd,Pain around kneecap caused by poor tracking and mechanical friction of kneecap (patellofemoral pain syndrome).
 pate_tend,Inflammation of tendon connecting kneecap to shinbone from repetitive stress.
 pelv_dysf_gene,General instability or alignment issues in pelvic region affecting biomechanics.
 pelv_mala,Misalignment or imbalance of pelvic bones causing uneven biomechanical loading.
 pero_tend,Inflammation of tendons around the outer ankle due to repetitive stress.
 pes_anse_burs,Inflammation of bursa on inner knee from repetitive knee bending movements.
-pate_pain_synd,Pain around kneecap caused by poor tracking and mechanical friction of kneecap (patellofemoral pain syndrome).
 piri_synd,Compression of sciatic nerve due to tightening or spasm of piriformis muscle.
 plan_fasc,Inflammation and pain of plantar fascia tissue on bottom of foot due to repetitive stress or overload.
 plica,Inflammation and irritation of tissue fold within knee joint due to repetitive movement.
