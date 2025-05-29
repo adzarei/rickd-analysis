@@ -1,69 +1,64 @@
-code,injury_name,description
-pain,pain,General sensation of discomfort signaling tissue stress or irritation without specific injury details.
-disc_dege,disc degeneration,Breakdown and gradual loss of spinal disc cushioning due to repeated loading or aging.
-other,other,Unspecified biomechanical disruption or pain without clear categorization.
-calf_musc_stra,calf muscle strain,Overstretching or tearing of the calf muscle fibers due to excessive load or sudden movement.
-pate_pain_synd,patellofemoral pain syndrome,Pain around kneecap from improper kneecap tracking and friction during movement.
-fill_in_spec_below,fill in specifics below,Requires additional biomechanical details for accurate description.
-hams_musc_stra,hamstring muscle strain,Overstretching or tearing of the hamstring muscles at the back of thigh due to excessive force or rapid movement.
-achi_tend,achilles tendonitis,Inflammation or irritation of Achilles tendon caused by repetitive loading or excessive strain.
-plan_fasc,plantar fasciitis,Inflammation and pain of plantar fascia tissue on bottom of foot due to repetitive stress or overload.
-medi_tibi_stre_synd,medial tibial stress syndrome,"Inflammation along inner shin bone from repetitive force, commonly known as shin splints."
-shin_spli,shin splints,Stress injury to muscles and tissues along shin from repetitive impact and loading.
-pate_frac,patellar fracture,Broken kneecap due to direct trauma or excessive biomechanical loading.
-si_joint_pain,si joint pain,Pain due to misalignment or excessive strain at sacroiliac joint.
-oste_pubis,osteitis pubis,Inflammation at pubic symphysis from repetitive pelvic stress or instability.
-burs,bursitis,Inflammation of joint cushioning sacs due to repeated friction or pressure.
-tibia_frac,tibia fracture,Complete break in shin bone from trauma or excessive mechanical force.
-liga_tear_acl,ligament tear/rupture acl,Complete or partial tear of anterior knee ligament from twisting or pivoting stress.
-itb_synd,itb syndrome,Painful friction of iliotibial band rubbing over knee joint from repetitive bending movements.
-comp_synd,compartment syndrome,Increased pressure within muscle compartments restricting blood flow from trauma or intense exertion.
-hip_flex_stra,hip flexor strain,"Overstretching or tearing of muscles that flex the hip, typically from rapid or forceful movements."
-piri_synd,piriformis syndrome,Compression of sciatic nerve due to tightening or spasm of piriformis muscle.
-oste,osteoarthritis,Degeneration of joint cartilage causing bone friction and inflammation.
-chon,chondromalacia,Cartilage softening under kneecap causing painful knee movement.
-pate_tend,patellar tendonitis,Inflammation of tendon connecting kneecap to shinbone from repetitive stress.
-disc_prot,disc protrusion,Spinal disc bulging that presses against nerve roots from excessive spinal loading.
-cyst,cyst,Fluid-filled sac formed by repetitive friction or tissue irritation.
-musc_stra,muscle strain,Muscle fibers stretched or torn due to excessive or sudden mechanical load.
-pelv_mala,pelvic malalignment,Misalignment or imbalance of pelvic bones causing uneven biomechanical loading.
-meni_tear_medi,meniscal tear medial,Injury to inner knee cartilage due to twisting forces or excessive stress.
-musc_spasm,muscle spasm,Involuntary muscle contraction due to fatigue or biomechanical stress response.
-"defo_(e.g_hamm_toes,_buni","deformity (e.g hammer/claw toes, bunion)",Abnormal structural alignment of toes or foot caused by chronic mechanical stress.
-liga_tear_pcl,ligament tear/rupture pcl,Tearing of posterior knee ligament typically from direct impact or hyperextension.
-tibia_stre_frac,tibia stress fracture,Small cracks in tibia caused by repetitive mechanical overload.
-pero_tend,peroneal tendonitis,Inflammation of tendons around the outer ankle due to repetitive stress.
-meta,metarsalgia,Pain in ball of foot caused by excessive pressure on metatarsal bones.
-low_back_pain,low back pain,"Pain from mechanical stress, instability, or muscle imbalance in lower spine."
-pes_anse_burs,pes anserine bursitis,Inflammation of bursa on inner knee from repetitive knee bending movements.
-liga_spra,ligament sprain,Stretching or tearing of ligaments due to excessive force or abnormal joint movement.
-tend,tendonitis,Inflammation of tendon caused by repetitive stress or excessive mechanical load.
-plica,plica,Inflammation and irritation of tissue fold within knee joint due to repetitive movement.
-meni_tear,meniscal tear-medial,Injury of the inner knee cartilage from twisting or repetitive stress.
-pate_tedo,patellar tedonitis,Inflammation of tendon below kneecap due to repetitive loading (also known as jumper's knee).
-fibu_stre_frac,fibula stress fracture,Small cracks in the fibula caused by repeated stress and loading.
-"defo_hamm_toes,_buni","deformity(ie hammer/claw toes, bunion)",Chronic abnormal structural changes in toes or foot joints due to biomechanical stress.
-pelv_dysf_gene,pelvic dysfunction general,General instability or alignment issues in pelvic region affecting biomechanics.
-groin_musc_stra,groin muscle strain,Tearing or overstretching of muscles in groin due to sudden or excessive load.
-hip_joint_irri,hip joint irritation,Pain and inflammation in the hip joint from repetitive mechanical stress.
-meni_tear1,meniscal tear-lateral,Outer knee cartilage injury caused by twisting or abnormal biomechanical loading.
-disl,dislocation,Bones in a joint lose alignment due to severe force or biomechanical disruption.
-first_ray_tend_(turf_toe),first ray tendonitis (turf toe),Inflammation of tendons at the base of big toe from forced upward bending.
-meta_stre_frac,metatarsal stress fracture,Small cracks in foot bones due to repetitive impact or stress.
-isch_burs,ischial bursitis,Inflammation of cushioning sacs at sitting bones due to prolonged sitting or repetitive stress.
-syno,synovitis,Inflammation of joint lining due to repetitive mechanical irritation.
-labr_tear,labral tear,Damage to cartilage rim (labrum) around joint socket from excessive mechanical stress or injury.
-nerve_impi,nerve impingement,Pressure on a nerve caused by mechanical compression or tight tissues.
-fibu_frac,fibula fracture,Break in fibula from direct trauma or excessive rotational stress.
-no_inju,no injury,No detectable biomechanical damage or tissue stress identified.
-pfps,pfps,Pain around kneecap caused by poor tracking and mechanical friction of kneecap (patellofemoral pain syndrome).
-non-_inju,non-specific injury,Generalized discomfort or dysfunction without specific biomechanical tissue damage.
-"mva,_not_runn_rela","mva, not running related",Biomechanical injury sustained from motor vehicle accident unrelated to running.
-high_ankle_spra_with_tend,high ankle sprain with tendonosis,Sprain and chronic degeneration of tendons above ankle from rotational mechanical stress.
-gast_stra,gastrocnemius strain,Overstretching or tearing of calf muscle due to sudden load or rapid movement.
-stre_reac,stress reaction,Bone irritation preceding fracture caused by repetitive mechanical loading.
-stre_frac,stress fracture,Tiny cracks in bone from repeated mechanical stress exceeding bone strength.
-stra,strain,Overstretching or tearing of muscles or tendons due to mechanical overload.
-liga_tear_mcl,ligament tear/rupture mcl,Tearing or rupture of medial knee ligament caused by lateral mechanical force.
-liga_tear,ligament tear/rupture-acl,Anterior knee ligament tear from biomechanical twisting or excessive knee loading.
-scia_nerve_impi,sciatic nerve impingement,Compression of sciatic nerve due to mechanical pressure causing radiating pain.
+code,description
+achi_tend,Inflammation or irritation of Achilles tendon caused by repetitive loading or excessive strain.
+burs,Inflammation of joint cushioning sacs due to repeated friction or pressure.
+calf_musc_stra,Overstretching or tearing of the calf muscle fibers due to excessive load or sudden movement.
+chon,Cartilage softening under kneecap causing painful knee movement.
+comp_synd,Increased pressure within muscle compartments restricting blood flow from trauma or intense exertion.
+cyst,Fluid-filled sac formed by repetitive friction or tissue irritation.
+deformity,Chronic abnormal structural changes in toes or foot joints due to biomechanical stress.
+disc_dege,Breakdown and gradual loss of spinal disc cushioning due to repeated loading or aging.
+disc_prot,Spinal disc bulging that presses against nerve roots from excessive spinal loading.
+disl,Bones in a joint lose alignment due to severe force or biomechanical disruption.
+fibu_frac,Break in fibula from direct trauma or excessive rotational stress.
+fibu_stre_frac,Small cracks in the fibula caused by repeated stress and loading.
+fill_in_spec_below,Requires additional biomechanical details for accurate description.
+first_ray_tend,Inflammation of tendons at the base of big toe from forced upward bending.
+gast_stra,Overstretching or tearing of calf muscle due to sudden load or rapid movement.
+groin_musc_stra,Tearing or overstretching of muscles in groin due to sudden or excessive load.
+hams_musc_stra,Overstretching or tearing of the hamstring muscles at the back of thigh due to excessive force or rapid movement.
+high_ankle_spra_with_tend,Sprain and chronic degeneration of tendons above ankle from rotational mechanical stress.
+hip_flex_stra,"Overstretching or tearing of muscles that flex the hip, typically from rapid or forceful movements."
+hip_joint_irri,Pain and inflammation in the hip joint from repetitive mechanical stress.
+isch_burs,Inflammation of cushioning sacs at sitting bones due to prolonged sitting or repetitive stress.
+itb_synd,Painful friction of iliotibial band rubbing over knee joint from repetitive bending movements.
+labr_tear,Damage to cartilage rim (labrum) around joint socket from excessive mechanical stress or injury.
+liga_spra,Stretching or tearing of ligaments due to excessive force or abnormal joint movement.
+liga_tear_acl,Complete or partial tear of anterior knee ligament from twisting or pivoting stress.
+liga_tear_mcl,Tearing or rupture of medial knee ligament caused by lateral mechanical force.
+liga_tear_pcl,Tearing of posterior knee ligament typically from direct impact or hyperextension.
+low_back_pain,"Pain from mechanical stress, instability, or muscle imbalance in lower spine."
+medi_tibi_stre_synd,"Inflammation along inner shin bone from repetitive force, commonly known as shin splints."
+meni_tear_med,Injury of the inner knee cartilage from twisting or repetitive stress.
+meni_tear_lat,Outer knee cartilage injury caused by twisting or abnormal biomechanical loading.
+meta,Pain in ball of foot caused by excessive pressure on metatarsal bones.
+meta_stre_frac,Small cracks in foot bones due to repetitive impact or stress.
+musc_spasm,Involuntary muscle contraction due to fatigue or biomechanical stress response.
+musc_stra,Muscle fibers stretched or torn due to excessive or sudden mechanical load.
+mva_not_runn_rela,Biomechanical injury sustained from motor vehicle accident unrelated to running.
+nerve_impi,Pressure on a nerve caused by mechanical compression or tight tissues.
+no_inju,No detectable biomechanical damage or tissue stress identified.
+oste,Degeneration of joint cartilage causing bone friction and inflammation.
+oste_pubis,Inflammation at pubic symphysis from repetitive pelvic stress or instability.
+other,Unspecified biomechanical disruption or pain without clear categorization.
+pain,General sensation of discomfort signaling tissue stress or irritation without specific injury details.
+pate_frac,Broken kneecap due to direct trauma or excessive biomechanical loading.
+pate_pain_synd,Pain around kneecap from improper kneecap tracking and friction during movement.
+pate_tend,Inflammation of tendon connecting kneecap to shinbone from repetitive stress.
+pelv_dysf_gene,General instability or alignment issues in pelvic region affecting biomechanics.
+pelv_mala,Misalignment or imbalance of pelvic bones causing uneven biomechanical loading.
+pero_tend,Inflammation of tendons around the outer ankle due to repetitive stress.
+pes_anse_burs,Inflammation of bursa on inner knee from repetitive knee bending movements.
+pate_pain_synd,Pain around kneecap caused by poor tracking and mechanical friction of kneecap (patellofemoral pain syndrome).
+piri_synd,Compression of sciatic nerve due to tightening or spasm of piriformis muscle.
+plan_fasc,Inflammation and pain of plantar fascia tissue on bottom of foot due to repetitive stress or overload.
+plica,Inflammation and irritation of tissue fold within knee joint due to repetitive movement.
+scia_nerve_impi,Compression of sciatic nerve due to mechanical pressure causing radiating pain.
+shin_spli,Stress injury to muscles and tissues along shin from repetitive impact and loading.
+si_joint_pain,Pain due to misalignment or excessive strain at sacroiliac joint.
+strain,Overstretching or tearing of muscles or tendons due to mechanical overload.
+stre_frac,Tiny cracks in bone from repeated mechanical stress exceeding bone strength.
+stre_reac,Bone irritation preceding fracture caused by repetitive mechanical loading.
+syno,Inflammation of joint lining due to repetitive mechanical irritation.
+tend,Inflammation of tendon caused by repetitive stress or excessive mechanical load.
+tibia_frac,Complete break in shin bone from trauma or excessive mechanical force.
+tibia_stre_frac,Small cracks in tibia caused by repetitive mechanical overload.
