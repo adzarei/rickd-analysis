@@ -39,7 +39,8 @@ musc_spasm,muscle spasm
 musc_stra,muscle strain
 mva_not_runn_rela,"mva, not running related"
 nerve_impi,nerve impingement
-no_inju,no injury
+healthy,no injury
+healthy,
 oste,osteoarthritis
 oste_pubis,osteitis pubis
 other,other
