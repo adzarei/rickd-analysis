@@ -27,6 +27,7 @@ plotly = "^6.0.1"
 darts = "^0.34.0"
 ipykernel = "^6.29.5"
 pydantic = "^2.11.7"
+jupyter = "^1.1.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.0.0"
