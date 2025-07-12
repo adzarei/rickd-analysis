@@ -46,32 +46,47 @@ def to_lowercase(df: pd.DataFrame, cols: list[str]=None) -> pd.DataFrame:
     return df
 
 
-def map_injury_codes(df: pd.DataFrame, mapping_file_path: str, source_col: str, target_col: str, map_key_col='key', map_value_col='value') -> pd.DataFrame:
-    """Map injury names to standardized codes using a mapping file.
-    
+def map_injury_codes(
+    df: pd.DataFrame,
+    mapping_file_path: str,
+    source_col: str,
+    target_col: str,
+    map_key_col='key',
+    map_value_col='value'
+) -> pd.DataFrame:
+    """Map injury names to standardized codes using a mapping file, including missing values.
+
     Args:
         df: Source dataframe containing injury names
         mapping_file_path: Path to CSV file containing injury name to code mappings
         source_col: Name of column containing injury names to map
         target_col: Name of new column to store mapped codes
-        
+
     Returns:
         DataFrame with new column containing mapped codes
     """
-    # Read mapping file and create dictionary
+    # Read mapping file and create dictionary, including mapping for empty string as missing value
     mapping_df = pd.read_csv(mapping_file_path)
     mapping_dict = dict(zip(mapping_df[map_key_col], mapping_df[map_value_col]))
 
+    # If mapping file contains a mapping for empty string, use it for missing values (NaN) as well
+    empty_str_code = mapping_dict.get("", None)
+
     result_df = df.copy()
-    
+
     # Map values using the mapping dictionary
     result_df[target_col] = result_df[source_col].map(mapping_dict)
-    
-    # Check for unmapped values
+
+    # Handle missing values in source_col if mapping for "" exists
+    if empty_str_code is not None:
+        # Fill mapped NaNs where the original value is missing (NaN)
+        result_df.loc[result_df[source_col].isna(), target_col] = empty_str_code
+
+    # Check for unmapped values (not NaN in source_col, but NaN in mapped col)
     unmapped = result_df[result_df[target_col].isna() & result_df[source_col].notna()]
     if not unmapped.empty:
         print(f"Warning: Found {len(unmapped)} unmapped values in {source_col}")
         print("Example unmapped values:")
         print(unmapped[[source_col]].head())
-    
+
     return result_df

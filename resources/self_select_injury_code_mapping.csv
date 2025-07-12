@@ -1,5 +1,5 @@
-key,value
-2 workouts missed in a row,missed_2_workouts
-continuing to train in pain,train_in_pain
-no injury,no_injury
-training volume/intensity affected,volume_intensity
+key,value,num_value
+no injury,no_injury,0
+continuing to train in pain,train_in_pain,1
+training volume/intensity affected,volume_intensity,2
+2 workouts missed in a row,missed_2_workouts,3

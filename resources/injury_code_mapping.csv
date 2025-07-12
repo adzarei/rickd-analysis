@@ -1,70 +1,71 @@
-value,key
-achi_tend,achilles tendonitis
-burs,bursitis
-calf_musc_stra,calf muscle strain
-chon,chondromalacia
-comp_synd,compartment syndrome
+orig_value,code
+achilles tendonitis,achi_tend
+bursitis,burs
+calf muscle strain,calf_musc_stra
+chondromalacia,chon
+compartment syndrome,comp_synd
 cyst,cyst
-deformity,"deformity(ie hammer/claw toes, bunion)"
-deformity,"deformity (e.g hammer/claw toes, bunion)"
-disc_dege,disc degeneration
-disc_prot,disc protrusion
-disl,dislocation
-fibu_frac,fibula fracture
-fibu_stre_frac,fibula stress fracture
-fill_in_spec_below,fill in specifics below
-first_ray_tend,first ray tendonitis (turf toe)
-gast_stra,gastrocnemius strain
-groin_musc_stra,groin muscle strain
-hams_musc_stra,hamstring muscle strain
-high_ankle_spra_with_tend,high ankle sprain with tendonosis
-hip_flex_stra,hip flexor strain
-hip_joint_irri,hip joint irritation
-isch_burs,ischial bursitis
-itb_synd,itb syndrome
-labr_tear,labral tear
-liga_spra,ligament sprain
-liga_tear_acl,ligament tear/rupture acl
-liga_tear_acl,ligament tear/rupture-acl
-liga_tear_mcl,ligament tear/rupture mcl
-liga_tear_pcl,ligament tear/rupture pcl
-low_back_pain,low back pain
-medi_tibi_stre_synd,medial tibial stress syndrome
-meni_tear_lat,meniscal tear-lateral
-meni_tear_med,meniscal tear medial
-meni_tear_med,meniscal tear-medial
-meta,metarsalgia
-meta_stre_frac,metatarsal stress fracture
-musc_spasm,muscle spasm
-musc_stra,muscle strain
-mva_not_runn_rela,"mva, not running related"
-nerve_impi,nerve impingement
-healthy,no injury
-healthy,
-oste,osteoarthritis
-oste_pubis,osteitis pubis
-other,other
-other,non-specific injury
+"deformity(ie hammer/claw toes, bunion)",deformity
+"deformity (e.g hammer/claw toes, bunion)",deformity
+disc degeneration,disc_dege
+disc protrusion,disc_prot
+dislocation,disl
+fibula fracture,fibu_frac
+fibula stress fracture,fibu_stre_frac
+first ray tendonitis (turf toe),first_ray_tend
+gastrocnemius strain,gast_stra
+groin muscle strain,groin_musc_stra
+hamstring muscle strain,hams_musc_stra
+fill in specifics below,no_injury
+no injury,no_injury
+"no injury,no injury",no_injury
+,no_injury
+high ankle sprain with tendonosis,high_ankle_spra_with_tend
+hip flexor strain,hip_flex_stra
+hip joint irritation,hip_joint_irri
+ischial bursitis,isch_burs
+itb syndrome,itb_synd
+labral tear,labr_tear
+ligament sprain,liga_spra
+ligament tear/rupture acl,liga_tear_acl
+ligament tear/rupture-acl,liga_tear_acl
+ligament tear/rupture mcl,liga_tear_mcl
+ligament tear/rupture pcl,liga_tear_pcl
+low back pain,low_back_pain
+medial tibial stress syndrome,medi_tibi_stre_synd
+meniscal tear-lateral,meni_tear_lat
+meniscal tear medial,meni_tear_med
+meniscal tear-medial,meni_tear_med
+metarsalgia,meta
+metatarsal stress fracture,meta_stre_frac
+muscle spasm,musc_spasm
+muscle strain,musc_stra
+"mva, not running related",motor_vehi_acci
+nerve impingement,nerve_impi
+osteoarthritis,osteoar
+osteitis pubis,oste_pubis
+other,pain
+non-specific injury,pain
 pain,pain
-pate_frac,patellar fracture
-pate_pain_synd,patellofemoral pain syndrome
-pate_pain_synd,pfps
-pate_tend,patellar tedonitis
-pate_tend,patellar tendonitis
-pelv_dysf_gene,pelvic dysfunction general
-pelv_mala,pelvic malalignment
-pero_tend,peroneal tendonitis
-pes_anse_burs,pes anserine bursitis
-piri_synd,piriformis syndrome
-plan_fasc,plantar fasciitis
+patellar fracture,pate_frac
+patellofemoral pain syndrome,pate_pain_synd
+pfps,pate_pain_synd
+patellar tedonitis,pate_tend
+patellar tendonitis,pate_tend
+pelvic dysfunction general,pelv_dysf_gene
+pelvic malalignment,pelv_mala
+peroneal tendonitis,pero_tend
+pes anserine bursitis,pes_anse_burs
+piriformis syndrome,piri_synd
+plantar fasciitis,plan_fasc
 plica,plica
-scia_nerve_impi,sciatic nerve impingement
-shin_spli,shin splints
-si_joint_pain,si joint pain
+sciatic nerve impingement,scia_nerve_impi
+shin splints,shin_spli
+si joint pain,si_joint_pain
 strain,strain
-stre_frac,stress fracture
-stre_reac,stress reaction
-syno,synovitis
-tend,tendonitis
-tibia_frac,tibia fracture
-tibia_stre_frac,tibia stress fracture
+stress fracture,stre_frac
+stress reaction,stre_reac
+synovitis,syno
+tendonitis,tend
+tibia fracture,tibia_frac
+tibia stress fracture,tibia_stre_frac
