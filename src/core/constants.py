@@ -24,3 +24,7 @@ RICKD_MAP_INJURY_DESC = f"{RICKD_PROY_RESOURCE_FOLDER}/injury_desc_mapping.csv"
 RICKD_MAP_SELF_INJURY_CODE = f"{RICKD_PROY_RESOURCE_FOLDER}/self_select_injury_code_mapping.csv"
 RICKD_MAP_INJURED_JOINT = f"{RICKD_PROY_RESOURCE_FOLDER}/injured_joint_mapping.csv"
 RICKD_MAP_INJURED_JOINT_SIDE = f"{RICKD_PROY_RESOURCE_FOLDER}/injured_joint_side_mapping.csv"
+
+
+# Models
+RICKD_MODELS_FOLDER = f"{RICKD_RESULTS_FOLDER}/models"
