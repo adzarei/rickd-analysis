@@ -1,7 +1,7 @@
 import os
 import json
 from collections import defaultdict
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any, List
 from pydantic import BaseModel
 
 
@@ -108,4 +108,28 @@ def process_row(row: Tuple[int, Dict], source_data_folder: str) -> SessionData:
         desc_variables=dv_data, 
         marker_center_data=marker_center_data, 
         marker_data=marker_data
-    ) 
+    )
+
+
+class ResultModel(BaseModel):
+    model_name: str
+    model_file: str
+    test_accuracy: float
+    test_precision: float
+    test_recall: float
+    test_f1: float
+    test_roc_auc: float
+    y_pred: Any
+    y_pred_proba: Any
+    best_parameters: Any
+    best_score: float
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            # Handles numpy types and arrays
+            # (np types are not imported here, but pydantic will use .tolist() if present)
+        }
+
+class ResultsModel(BaseModel):
+    results: List[ResultModel]
