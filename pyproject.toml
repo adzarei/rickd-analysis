@@ -28,12 +28,16 @@ darts = "^0.34.0"
 ipykernel = "^6.29.5"
 pydantic = "^2.11.7"
 jupyter = "^1.1.1"
+scipy = "^1.11.0"
+kineticstoolkit = "^0.7.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.0.0"
 isort = "^5.12.0"
 ruff = "^0.1.0"
 pre-commit = "^3.3.0"
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
 
 [tool.ruff]
 line-length = 88
@@ -43,3 +47,20 @@ ignore = []
 
 [tool.ruff.isort]
 known-first-party = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--disable-warnings"
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests"
+]

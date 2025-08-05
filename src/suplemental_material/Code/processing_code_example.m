@@ -18,11 +18,14 @@
 
 %% get user directories
 
-code_folder = uigetdir('C:\','Select folder containing PROCESSING code');
+% code_folder = uigetdir('/Users/adrianzapaterreig/Documents/Personal/TFM/rickd-analysis/src/suplemental_material/Code');
+code_folder = '/Users/adrianzapaterreig/Documents/Personal/TFM/rickd-analysis/src/suplemental_material/Code';
 
-data_folder = uigetdir('C:\','Select folder containing JSON data');
+% data_folder = uigetdir('/Users/adrianzapaterreig/Documents/Personal/TFM/data/Running Injury Clinic Kinematic Dataset/source_data');
+data_folder = '/Users/adrianzapaterreig/Documents/Personal/TFM/data/Running Injury Clinic Kinematic Dataset/source_data';
 
-files = dir([data_folder '\*\*.json']);
+
+files = dir([data_folder '/*/*.json']);
 
 cur_folder = pwd;
 
@@ -37,7 +40,7 @@ err_log = cell(size(files,1),4);
 
 for i = 1%size(files,1) uncomment to process all files
 
-     waitbar(i/size(files,1),f,['Processing subjects ' num2str(i) ' of ' num2str(size(files,1)) ' JSON files']);
+     f = waitbar(i/size(files,1),f,['Processing subjects ' num2str(i) ' of ' num2str(size(files,1)) ' JSON files']);
 
     try
         %get fully defined path to json data file
@@ -109,10 +112,13 @@ cd(cur_folder)
 
 %% basic error logging (uncomment to use)
 
-% curdate= date;
-% today = strrep(curdate, '-', '');
-%
-% if size(err_log,1) > 0
-%     err_log = err_log(~cellfun(@isempty, err_log(:,1)), :);
-%     save([cur_folder '\' today '_errlog'], 'err_log');
-% end
+curdate= date;
+today = strrep(curdate, '-', '');
+
+if size(err_log,1) > 0
+    err_log = err_log(~cellfun(@isempty, err_log(:,1)), :);
+    save([cur_folder '\' today '_errlog'], 'err_log');
+end
+
+% Close the waitbar
+close(f)
