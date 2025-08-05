@@ -39,14 +39,7 @@ if ~exist(output_folder, 'dir')
     mkdir(output_folder);
 end
 
-% Create subfolders for different output formats
-csv_folder = fullfile(output_folder, 'csv');
-mat_folder = fullfile(output_folder, 'mat');
-if ~exist(csv_folder, 'dir'), mkdir(csv_folder); end
-if ~exist(mat_folder, 'dir'), mkdir(mat_folder); end
-
 files = dir([data_folder '/*/*.json']);
-
 
 cur_folder = pwd;
 
@@ -96,7 +89,7 @@ try
     fprintf('\n--- Processing file %d/%d: %s ---\n', i, length(files), files(i).name);
     
     try
-        %get fully defined path to json data file
+        % get fully defined path to json data file
         json_file = fullfile(files(i).folder, files(i).name);
 
         % Extract subject_id and session_id from file path
@@ -191,7 +184,7 @@ try
             if ~exist(inputs_folder, 'dir'), mkdir(inputs_folder); end
             
             % Export running data to CSV with new structure
-            export_to_csv(results.running, results_folder);
+            export_results_to_csv(results.running, results_folder);
             
             % Export inputs data to CSV
             export_inputs_to_csv(results.inputs, inputs_folder);
@@ -215,8 +208,8 @@ try
             warning('Running data found (has_running = true) but label is not ''run'' (r_label = ''%s'') in file %s.', r_label, files(i).name);
         end
         
-        % Save all results to .mat file
-        output_filename = fullfile(mat_folder, [subject_id '_matlab_results.mat']);
+        % Save all results to .mat file in the subject folder
+        output_filename = fullfile(subject_folder, [id '_matlab_results.mat']);
         save(output_filename, 'results', '-v7.3');
                 
         % Update summary
@@ -261,7 +254,7 @@ writetable(summary_table, summary_csv);
 %% Save combined discrete variables
 if discrete_vars_initialized && ~isempty(discrete_vars_data)
     discrete_vars_table = cell2table(discrete_vars_data, 'VariableNames', discrete_vars_headers);
-    discrete_vars_csv = fullfile(output_folder, 'discrete_variables.csv');
+    discrete_vars_csv = fullfile(output_folder, 'session_discrete_variables.csv');
     writetable(discrete_vars_table, discrete_vars_csv);
     fprintf('💾 Discrete variables saved as: %s\n', discrete_vars_csv);
 end
@@ -275,12 +268,12 @@ fprintf('Errors: %d\n', sum(strcmp(summary_table.ProcessingStatus, 'Error')));
 cd(cur_folder)
 
 fprintf('\nProcessing complete!\n');
-fprintf('📁 MAT files saved in: %s\n', mat_folder);
+fprintf('📁 MAT files saved in individual subject folders under: %s\n', output_folder);
 fprintf('📊 Individual CSV files saved in subject folders under: %s\n', output_folder);
 fprintf('📋 Summary saved as: %s\n', summary_csv);
 
 %% Helper function to export data to CSV format with new structure
-function export_to_csv(gait_data, output_folder)
+function export_results_to_csv(gait_data, output_folder)
     % Export gait analysis results to CSV files in individual subject folders
     
     % Export joint angles (one file per joint)
@@ -449,7 +442,7 @@ function export_to_csv(gait_data, output_folder)
             djc_table = table(joint_names, djc_data(:,1), djc_data(:,2), djc_data(:,3), ...
                 'VariableNames', {'Joint', 'X_velocity', 'Y_velocity', 'Z_velocity'});
             
-            filename = fullfile(output_folder, 'djc.csv');
+            filename = fullfile(output_folder, 'distance_to_joint_centers.csv');
             writetable(djc_table, filename);
         end
     end
@@ -465,7 +458,7 @@ function export_to_csv(gait_data, output_folder)
             % Reorder columns
             event_table = event_table(:, {'EventNumber', 'EventIndex'});
             
-            filename = fullfile(output_folder, 'event.csv');
+            filename = fullfile(output_folder, 'gait_cycle_events.csv');
             writetable(event_table, filename);
         end
     end
@@ -581,7 +574,7 @@ function export_inputs_to_csv(inputs_data, output_folder)
             neutral_table = table(joint_names, neutral_data(:,1), neutral_data(:,2), neutral_data(:,3), ...
                 'VariableNames', {'Joint', 'X_coord', 'Y_coord', 'Z_coord'});
             
-            filename = fullfile(output_folder, 'neutral_joint_markers.csv');
+            filename = fullfile(output_folder, 'neutral_joint_marker_centers.csv');
             writetable(neutral_table, filename);
         end
     end
@@ -614,8 +607,35 @@ function export_inputs_to_csv(inputs_data, output_folder)
             joints_table = table(joint_name_list, joints_data(:,1), joints_data(:,2), joints_data(:,3), ...
                 'VariableNames', {'Joint', 'X_coord', 'Y_coord', 'Z_coord'});
             
-            filename = fullfile(output_folder, 'joint_markers.csv');
+            filename = fullfile(output_folder, 'joint_marker_centers.csv');
             writetable(joints_table, filename);
+        end
+    end
+    
+    % Export running data (one file per marker)
+    if isfield(inputs_data, 'running')
+        running = inputs_data.running;
+        markers = fieldnames(running);
+        
+        for m = 1:length(markers)
+            marker_name = markers{m};
+            marker_data = running.(marker_name);
+            
+            % Ensure marker_data has at least 3 columns, pad with NaN if necessary
+            if size(marker_data, 2) < 3
+                warning('Running marker "%s" data has only %d columns instead of expected 3. Padding with NaN.', marker_name, size(marker_data, 2));
+                marker_data = [marker_data, NaN(size(marker_data, 1), 3 - size(marker_data, 2))];
+            end
+            
+            % Create table with time index and x,y,z columns
+            n_samples = size(marker_data, 1);
+            time_idx = (1:n_samples)';
+            
+            running_table = table(time_idx, marker_data(:,1), marker_data(:,2), marker_data(:,3), ...
+                'VariableNames', {'TimeIndex', 'X_coord', 'Y_coord', 'Z_coord'});
+            
+            filename = fullfile(output_folder, sprintf('%s_marker_data.csv', marker_name));
+            writetable(running_table, filename);
         end
     end
     
