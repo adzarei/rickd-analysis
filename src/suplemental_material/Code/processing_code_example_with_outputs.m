@@ -74,9 +74,24 @@ summary_data = cell(length(file_indices), 6);  % Preallocate based on number of 
 summary_headers = {'ID', 'SubjectID', 'SessionID', 'JsonFile', 'ProcessingStatus', 'ErrorMessage'};
 summary_row = 0;  % Track current row
 
+%% Initialize discrete variables tracking
+discrete_vars_data = [];
+discrete_vars_headers = [];
+discrete_vars_initialized = false;
+
 %% Process files
 
-for i = file_indices
+% Initialize waitbar
+total_files = length(file_indices);
+h = waitbar(0, sprintf('Processing files... (0/%d)', total_files), 'Name', 'MATLAB Processing Progress');
+
+try
+    for idx = 1:length(file_indices)
+    i = file_indices(idx);
+    
+    % Update waitbar
+    progress_percent = (idx - 1) / total_files;
+    waitbar(progress_percent, h, sprintf('Processing file %d/%d: %s', idx, total_files, files(i).name));
     
     fprintf('\n--- Processing file %d/%d: %s ---\n', i, length(files), files(i).name);
     
@@ -85,9 +100,8 @@ for i = file_indices
         json_file = fullfile(files(i).folder, files(i).name);
 
         % Extract subject_id and session_id from file path
-        [parent_folder, session_file, ext] = fileparts(json_file);
+        [parent_folder, session_id, ext] = fileparts(json_file);
         [~, subject_id] = fileparts(parent_folder);
-        session_id = [session_file ext];
 
         % Match id column in Python tables
         id = [subject_id '_' session_id]; 
@@ -121,8 +135,9 @@ for i = file_indices
         
         % Initialize results structure
         results = struct();
-        [~, subject_name, ~] = fileparts(files(i).name);
-        results.subject_id = subject_name;
+        results.id = id;
+        results.session_id = session_id;
+        results.subject_id = subject_id;
         results.json_file = json_file;
         
         % Save input data for Python testing
@@ -163,8 +178,19 @@ for i = file_indices
             % results.running.gait_steps.events_flag = r_eventsflag;
             results.running.gait_steps.label = r_label;
             
-            % Export running data to CSV
-            export_to_csv(results.running, subject_name, r_label, csv_folder);
+            % Create individual folder for this file
+            subject_folder = fullfile(output_folder, id);
+            if ~exist(subject_folder, 'dir')
+                mkdir(subject_folder);
+            end
+            
+            % Export running data to CSV with new structure
+            export_to_csv(results.running, subject_folder);
+            
+            % Collect discrete variables for combined file
+            [discrete_vars_data, discrete_vars_headers, discrete_vars_initialized] = ...
+                collect_discrete_variables(results.running, id, r_speedoutput, r_label, ...
+                                         discrete_vars_data, discrete_vars_headers, discrete_vars_initialized);
             
             fprintf('Running data processed successfully.\n');
         end
@@ -181,14 +207,14 @@ for i = file_indices
         end
         
         % Save all results to .mat file
-        output_filename = fullfile(mat_folder, [subject_name '_matlab_results.mat']);
+        output_filename = fullfile(mat_folder, [subject_id '_matlab_results.mat']);
         save(output_filename, 'results', '-v7.3');
                 
         % Update summary
         summary_row = summary_row + 1;
-        summary_data(summary_row, :) = {id, subject_name, session_id, json_file, 'Success', ''};
+        summary_data(summary_row, :) = {id, subject_id, session_id, json_file, 'Success', ''};
         
-        fprintf('Results saved for subject %s\n', subject_name);
+        fprintf('Results saved for subject %s\n', subject_id);
         
     catch ME
         fprintf('Error processing file %s:\n', files(i).name);
@@ -198,17 +224,38 @@ for i = file_indices
         end
         
         % Update summary with error
-        [~, subject_name, ~] = fileparts(files(i).name);
+        [~, subject_id, ~] = fileparts(files(i).name);
         summary_row = summary_row + 1;
-        summary_data(summary_row, :) = {id, subject_name, session_id, json_file, 'Error', ME.message};
+        summary_data(summary_row, :) = {id, subject_id, session_id, json_file, 'Error', ME.message};
     end
     
+    end
+
+    % Complete waitbar and close
+    waitbar(1, h, sprintf('Processing complete! (%d/%d files processed)', total_files, total_files));
+    pause(1); % Brief pause to show completion
+    close(h);
+    
+catch ME
+    % Ensure waitbar is closed even if an error occurs
+    if exist('h', 'var') && ishandle(h)
+        close(h);
+    end
+    rethrow(ME);
 end
 
 %% Save processing summary
 summary_table = cell2table(summary_data, 'VariableNames', summary_headers);
-summary_csv = fullfile(csv_folder, 'processing_summary.csv');
+summary_csv = fullfile(output_folder, 'processing_summary.csv');
 writetable(summary_table, summary_csv);
+
+%% Save combined discrete variables
+if discrete_vars_initialized && ~isempty(discrete_vars_data)
+    discrete_vars_table = cell2table(discrete_vars_data, 'VariableNames', discrete_vars_headers);
+    discrete_vars_csv = fullfile(output_folder, 'discrete_variables.csv');
+    writetable(discrete_vars_table, discrete_vars_csv);
+    fprintf('💾 Discrete variables saved as: %s\n', discrete_vars_csv);
+end
 
 fprintf('\n📊 Processing Summary:\n');
 fprintf('Total files processed: %d\n', height(summary_table));
@@ -220,14 +267,14 @@ cd(cur_folder)
 
 fprintf('\nProcessing complete!\n');
 fprintf('📁 MAT files saved in: %s\n', mat_folder);
-fprintf('📊 CSV files saved in: %s\n', csv_folder);
+fprintf('📊 Individual CSV files saved in subject folders under: %s\n', output_folder);
 fprintf('📋 Summary saved as: %s\n', summary_csv);
 
-%% Helper function to export data to CSV format
-function export_to_csv(gait_data, subject_id, gait_type, output_folder)
-    % Export gait analysis results to CSV files for easy Python dataframe loading
+%% Helper function to export data to CSV format with new structure
+function export_to_csv(gait_data, output_folder)
+    % Export gait analysis results to CSV files in individual subject folders
     
-    % Export joint angles
+    % Export joint angles (one file per joint)
     if isfield(gait_data, 'gait_kinematics') && isfield(gait_data.gait_kinematics, 'angles')
         angles = gait_data.gait_kinematics.angles;
         joints = fieldnames(angles);
@@ -236,25 +283,25 @@ function export_to_csv(gait_data, subject_id, gait_type, output_folder)
             joint_name = joints{j};
             joint_data = angles.(joint_name);
             
+            % Ensure joint_data has at least 3 columns, pad with NaN if necessary
+            if size(joint_data, 2) < 3
+                warning('Joint "%s" angles data has only %d columns instead of expected 3. Padding with NaN.', joint_name, size(joint_data, 2));
+                joint_data = [joint_data, NaN(size(joint_data, 1), 3 - size(joint_data, 2))];
+            end
+            
             % Create table with time index and x,y,z columns
             n_samples = size(joint_data, 1);
             time_idx = (1:n_samples)';
             
             angle_table = table(time_idx, joint_data(:,1), joint_data(:,2), joint_data(:,3), ...
                 'VariableNames', {'TimeIndex', 'X_deg', 'Y_deg', 'Z_deg'});
-            angle_table.SubjectID = repmat({subject_id}, n_samples, 1);
-            angle_table.GaitType = repmat({gait_type}, n_samples, 1);
-            angle_table.Joint = repmat({joint_name}, n_samples, 1);
             
-            % Reorder columns
-            angle_table = angle_table(:, {'SubjectID', 'GaitType', 'Joint', 'TimeIndex', 'X_deg', 'Y_deg', 'Z_deg'});
-            
-            filename = fullfile(output_folder, sprintf('%s_%s_%s_angles.csv', subject_id, gait_type, joint_name));
+            filename = fullfile(output_folder, sprintf('%s_angles.csv', joint_name));
             writetable(angle_table, filename);
         end
     end
     
-    % Export joint velocities
+    % Export joint velocities (one file per joint)
     if isfield(gait_data, 'gait_kinematics') && isfield(gait_data.gait_kinematics, 'velocities')
         velocities = gait_data.gait_kinematics.velocities;
         joints = fieldnames(velocities);
@@ -263,24 +310,24 @@ function export_to_csv(gait_data, subject_id, gait_type, output_folder)
             joint_name = joints{j};
             joint_data = velocities.(joint_name);
             
+            % Ensure joint_data has at least 3 columns, pad with NaN if necessary
+            if size(joint_data, 2) < 3
+                warning('Joint "%s" velocities data has only %d columns instead of expected 3. Padding with NaN.', joint_name, size(joint_data, 2));
+                joint_data = [joint_data, NaN(size(joint_data, 1), 3 - size(joint_data, 2))];
+            end
+            
             n_samples = size(joint_data, 1);
             time_idx = (1:n_samples)';
             
             vel_table = table(time_idx, joint_data(:,1), joint_data(:,2), joint_data(:,3), ...
                 'VariableNames', {'TimeIndex', 'X_deg_per_s', 'Y_deg_per_s', 'Z_deg_per_s'});
-            vel_table.SubjectID = repmat({subject_id}, n_samples, 1);
-            vel_table.GaitType = repmat({gait_type}, n_samples, 1);
-            vel_table.Joint = repmat({joint_name}, n_samples, 1);
             
-            % Reorder columns
-            vel_table = vel_table(:, {'SubjectID', 'GaitType', 'Joint', 'TimeIndex', 'X_deg_per_s', 'Y_deg_per_s', 'Z_deg_per_s'});
-            
-            filename = fullfile(output_folder, sprintf('%s_%s_%s_velocities.csv', subject_id, gait_type, joint_name));
+            filename = fullfile(output_folder, sprintf('%s_velocities.csv', joint_name));
             writetable(vel_table, filename);
         end
     end
     
-    % Export normalized angles (from gait_steps)
+    % Export normalized angles (one file per joint)
     if isfield(gait_data, 'gait_steps') && isfield(gait_data.gait_steps, 'norm_angles')
         norm_angles = gait_data.gait_steps.norm_angles;
         joints = fieldnames(norm_angles);
@@ -289,32 +336,140 @@ function export_to_csv(gait_data, subject_id, gait_type, output_folder)
             joint_name = joints{j};
             joint_data = norm_angles.(joint_name);
             
+            % Ensure joint_data has at least 3 columns, pad with NaN if necessary
+            if size(joint_data, 2) < 3
+                warning('Joint "%s" normalized angles data has only %d columns instead of expected 3. Padding with NaN.', joint_name, size(joint_data, 2));
+                joint_data = [joint_data, NaN(size(joint_data, 1), 3 - size(joint_data, 2))];
+            end
+            
             n_samples = size(joint_data, 1);
             percent_gait_cycle = (1:n_samples)' / n_samples * 100;
             
             norm_table = table(percent_gait_cycle, joint_data(:,1), joint_data(:,2), joint_data(:,3), ...
                 'VariableNames', {'PercentGaitCycle', 'X_deg', 'Y_deg', 'Z_deg'});
-            norm_table.SubjectID = repmat({subject_id}, n_samples, 1);
-            norm_table.GaitType = repmat({gait_type}, n_samples, 1);
-            norm_table.Joint = repmat({joint_name}, n_samples, 1);
             
-            % Reorder columns
-            norm_table = norm_table(:, {'SubjectID', 'GaitType', 'Joint', 'PercentGaitCycle', 'X_deg', 'Y_deg', 'Z_deg'});
-            
-            filename = fullfile(output_folder, sprintf('%s_%s_%s_normalized_angles.csv', subject_id, gait_type, joint_name));
+            filename = fullfile(output_folder, sprintf('%s_norm_angles.csv', joint_name));
             writetable(norm_table, filename);
         end
     end
     
-    % Export discrete variables
+    % Export normalized velocities (one file per joint)
+    if isfield(gait_data, 'gait_steps') && isfield(gait_data.gait_steps, 'norm_velocities')
+        norm_velocities = gait_data.gait_steps.norm_velocities;
+        joints = fieldnames(norm_velocities);
+        
+        for j = 1:length(joints)
+            joint_name = joints{j};
+            joint_data = norm_velocities.(joint_name);
+            
+            % Ensure joint_data has at least 3 columns, pad with NaN if necessary
+            if size(joint_data, 2) < 3
+                warning('Joint "%s" normalized velocities data has only %d columns instead of expected 3. Padding with NaN.', joint_name, size(joint_data, 2));
+                joint_data = [joint_data, NaN(size(joint_data, 1), 3 - size(joint_data, 2))];
+            end
+            
+            n_samples = size(joint_data, 1);
+            percent_gait_cycle = (1:n_samples)' / n_samples * 100;
+            
+            norm_vel_table = table(percent_gait_cycle, joint_data(:,1), joint_data(:,2), joint_data(:,3), ...
+                'VariableNames', {'PercentGaitCycle', 'X_deg_per_s', 'Y_deg_per_s', 'Z_deg_per_s'});
+            
+            filename = fullfile(output_folder, sprintf('%s_norm_velocities.csv', joint_name));
+            writetable(norm_vel_table, filename);
+        end
+    end
+    
+    % Export joint centers
+    if isfield(gait_data, 'gait_kinematics') && isfield(gait_data.gait_kinematics, 'joint_centers')
+        joint_centers = gait_data.gait_kinematics.joint_centers;
+        joints = fieldnames(joint_centers);
+        
+        % Create combined table for all joint centers
+        jc_data = [];
+        joint_names = {};
+        
+        for j = 1:length(joints)
+            joint_name = joints{j};
+            joint_data = joint_centers.(joint_name);
+            
+            % Ensure joint_data has at least 3 columns, pad with NaN if necessary
+            if size(joint_data, 2) < 3
+                warning('Joint "%s" centers data has only %d columns instead of expected 3. Padding with NaN.', joint_name, size(joint_data, 2));
+                joint_data = [joint_data, NaN(size(joint_data, 1), 3 - size(joint_data, 2))];
+            end
+            
+            n_samples = size(joint_data, 1);
+            jc_data = [jc_data; joint_data(:, 1:3)];  % Only take first 3 columns
+            joint_names = [joint_names; repmat({joint_name}, n_samples, 1)];
+        end
+        
+        if ~isempty(jc_data)
+            jc_table = table(joint_names, jc_data(:,1), jc_data(:,2), jc_data(:,3), ...
+                'VariableNames', {'Joint', 'X_coord', 'Y_coord', 'Z_coord'});
+            
+            filename = fullfile(output_folder, 'joint_centers.csv');
+            writetable(jc_table, filename);
+        end
+    end
+    
+    % Export djc (joint center derivatives)
+    if isfield(gait_data, 'gait_kinematics') && isfield(gait_data.gait_kinematics, 'djc')
+        djc = gait_data.gait_kinematics.djc;
+        joints = fieldnames(djc);
+        
+        % Create combined table for all djc
+        djc_data = [];
+        joint_names = {};
+        
+        for j = 1:length(joints)
+            joint_name = joints{j};
+            joint_data = transpose(djc.(joint_name));
+            
+            % Ensure joint_data has at least 3 columns, pad with NaN if necessary
+            if size(joint_data, 2) < 3
+                warning('Joint "%s" djc data has only %d columns instead of expected 3. Padding with NaN.', joint_name, size(joint_data, 2));
+                joint_data = [joint_data, NaN(size(joint_data, 1), 3 - size(joint_data, 2))];
+            end
+            
+            n_samples = size(joint_data, 1);
+            djc_data = [djc_data; joint_data(:, 1:3)];  % Only take first 3 columns
+            joint_names = [joint_names; repmat({joint_name}, n_samples, 1)];
+        end
+        
+        if ~isempty(djc_data)
+            djc_table = table(joint_names, djc_data(:,1), djc_data(:,2), djc_data(:,3), ...
+                'VariableNames', {'Joint', 'X_velocity', 'Y_velocity', 'Z_velocity'});
+            
+            filename = fullfile(output_folder, 'djc.csv');
+            writetable(djc_table, filename);
+        end
+    end
+    
+    % Export events
+    if isfield(gait_data, 'gait_steps') && isfield(gait_data.gait_steps, 'event')
+        event_data = gait_data.gait_steps.event;
+        
+        if ~isempty(event_data)
+            event_table = table(event_data, 'VariableNames', {'EventIndex'});
+            event_table.EventNumber = (1:length(event_data))';
+            
+            % Reorder columns
+            event_table = event_table(:, {'EventNumber', 'EventIndex'});
+            
+            filename = fullfile(output_folder, 'event.csv');
+            writetable(event_table, filename);
+        end
+    end
+    
+end
+
+%% Helper function to collect discrete variables for combined file
+function [discrete_vars_data, discrete_vars_headers, discrete_vars_initialized] = ...
+    collect_discrete_variables(gait_data, id, speed_output, label, discrete_vars_data, discrete_vars_headers, discrete_vars_initialized)
+    
     if isfield(gait_data, 'gait_steps') && isfield(gait_data.gait_steps, 'discrete_variables')
         discrete_vars = gait_data.gait_steps.discrete_variables;
 
-        % discrete_vars is a 77x3 matrix where:
-        % Column 1: Variable identifier (often unused/zero)
-        % Column 2: Left side values
-        % Column 3: Right side values
-        
         % Define variable names for the 77 discrete variables
         var_names = {
             'Variable_1', 'Step_Width', 'Stride_Rate', 'Stride_Length', 'Swing_Time', ...
@@ -344,43 +499,43 @@ function export_to_csv(gait_data, subject_id, gait_type, output_folder)
             'Vertical_Oscillation'
         };
         
-        % Create a table with discrete variables
-        discrete_table = table();
-        discrete_table.SubjectID = {subject_id};
-        discrete_table.GaitType = {gait_type};
+        % Initialize headers if this is the first file
+        if ~discrete_vars_initialized
+            discrete_vars_headers = {'ID', 'Speed_Output', 'Label'};
+            
+            % Only add variables that have non-empty/non-zero values
+            for v = 1:min(length(var_names), size(discrete_vars, 1))
+                left_val = discrete_vars(v, 2);
+                right_val = discrete_vars(v, 3);
+                
+                % Check if values are non-empty and not just placeholders (0 or NaN)
+                if ~(isnan(left_val) && isnan(right_val)) && ~(left_val == 0 && right_val == 0)
+                    var_name = var_names{v};
+                    left_col_name = sprintf('%s_Left', var_name);
+                    right_col_name = sprintf('%s_Right', var_name);
+                    discrete_vars_headers{end+1} = left_col_name;
+                    discrete_vars_headers{end+1} = right_col_name;
+                end
+            end
+            discrete_vars_initialized = true;
+        end
         
-        % Add each variable with left and right values
+        % Create row data for this file
+        row_data = {id, speed_output, label};
+        
+        % Add discrete variable values (only for non-empty variables)
         for v = 1:min(length(var_names), size(discrete_vars, 1))
-            var_name = var_names{v};
+            left_val = discrete_vars(v, 2);
+            right_val = discrete_vars(v, 3);
             
-            % Add left and right values as separate columns
-            left_col_name = sprintf('%s_Left', var_name);
-            right_col_name = sprintf('%s_Right', var_name);
-            
-            discrete_table.(left_col_name) = discrete_vars(v, 2);  % Column 2 = Left
-            discrete_table.(right_col_name) = discrete_vars(v, 3); % Column 3 = Right
+            % Only add if values are non-empty and not just placeholders
+            if ~(isnan(left_val) && isnan(right_val)) && ~(left_val == 0 && right_val == 0)
+                row_data{end+1} = left_val;   % Left side
+                row_data{end+1} = right_val;  % Right side
+            end
         end
         
-        filename = fullfile(output_folder, sprintf('%s_%s_discrete_variables.csv', subject_id, gait_type));
-        writetable(discrete_table, filename);
-    end
-    
-    % Export events
-    if isfield(gait_data, 'gait_steps') && isfield(gait_data.gait_steps, 'events')
-        events = gait_data.gait_steps.events;
-        
-        if ~isempty(events)
-            events_table = table(events, 'VariableNames', {'EventIndex'});
-            events_table.SubjectID = repmat({subject_id}, length(events), 1);
-            events_table.GaitType = repmat({gait_type}, length(events), 1);
-            events_table.EventNumber = (1:length(events))';
-            
-            % Reorder columns
-            events_table = events_table(:, {'SubjectID', 'GaitType', 'EventNumber', 'EventIndex'});
-            
-            filename = fullfile(output_folder, sprintf('%s_%s_events.csv', subject_id, gait_type));
-            writetable(events_table, filename);
-        end
-    end
-    
+        % Add this row to the combined data
+        discrete_vars_data = [discrete_vars_data; row_data];
+     end
 end 
