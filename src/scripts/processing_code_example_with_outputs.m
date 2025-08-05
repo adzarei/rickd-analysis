@@ -184,12 +184,21 @@ try
                 mkdir(subject_folder);
             end
             
+            % Create subfolders for results and inputs
+            results_folder = fullfile(subject_folder, 'results');
+            inputs_folder = fullfile(subject_folder, 'inputs');
+            if ~exist(results_folder, 'dir'), mkdir(results_folder); end
+            if ~exist(inputs_folder, 'dir'), mkdir(inputs_folder); end
+            
             % Export running data to CSV with new structure
-            export_to_csv(results.running, subject_folder);
+            export_to_csv(results.running, results_folder);
+            
+            % Export inputs data to CSV
+            export_inputs_to_csv(results.inputs, inputs_folder);
             
             % Collect discrete variables for combined file
             [discrete_vars_data, discrete_vars_headers, discrete_vars_initialized] = ...
-                collect_discrete_variables(results.running, id, r_speedoutput, r_label, ...
+                collect_discrete_variables(results.running, id, r_speedoutput, r_label, out.hz_r, ...
                                          discrete_vars_data, discrete_vars_headers, discrete_vars_initialized);
             
             fprintf('Running data processed successfully.\n');
@@ -465,7 +474,7 @@ end
 
 %% Helper function to collect discrete variables for combined file
 function [discrete_vars_data, discrete_vars_headers, discrete_vars_initialized] = ...
-    collect_discrete_variables(gait_data, id, speed_output, label, discrete_vars_data, discrete_vars_headers, discrete_vars_initialized)
+    collect_discrete_variables(gait_data, id, speed_output, label, hz, discrete_vars_data, discrete_vars_headers, discrete_vars_initialized)
     
     if isfield(gait_data, 'gait_steps') && isfield(gait_data.gait_steps, 'discrete_variables')
         discrete_vars = gait_data.gait_steps.discrete_variables;
@@ -501,7 +510,7 @@ function [discrete_vars_data, discrete_vars_headers, discrete_vars_initialized] 
         
         % Initialize headers if this is the first file
         if ~discrete_vars_initialized
-            discrete_vars_headers = {'ID', 'Speed_Output', 'Label'};
+            discrete_vars_headers = {'ID', 'Speed_Output', 'Label', 'Hz'};
             
             % Only add variables that have non-empty/non-zero values
             for v = 1:min(length(var_names), size(discrete_vars, 1))
@@ -521,7 +530,7 @@ function [discrete_vars_data, discrete_vars_headers, discrete_vars_initialized] 
         end
         
         % Create row data for this file
-        row_data = {id, speed_output, label};
+        row_data = {id, speed_output, label, hz};
         
         % Add discrete variable values (only for non-empty variables)
         for v = 1:min(length(var_names), size(discrete_vars, 1))
@@ -535,7 +544,79 @@ function [discrete_vars_data, discrete_vars_headers, discrete_vars_initialized] 
             end
         end
         
-        % Add this row to the combined data
-        discrete_vars_data = [discrete_vars_data; row_data];
+                 % Add this row to the combined data
+         discrete_vars_data = [discrete_vars_data; row_data];
      end
+end
+
+%% Helper function to export inputs data to CSV format
+function export_inputs_to_csv(inputs_data, output_folder)
+    % Export input data (joints, neutral, etc.) to CSV files
+    
+    % Export neutral joint markers
+    if isfield(inputs_data, 'neutral')
+        neutral = inputs_data.neutral;
+        joints = fieldnames(neutral);
+        
+        % Create combined table for all neutral markers
+        neutral_data = [];
+        joint_names = {};
+        
+        for j = 1:length(joints)
+            joint_name = joints{j};
+            joint_data = neutral.(joint_name);
+            
+            % Ensure joint_data has at least 3 columns, pad with NaN if necessary
+            if size(joint_data, 2) < 3
+                warning('Neutral joint "%s" data has only %d columns instead of expected 3. Padding with NaN.', joint_name, size(joint_data, 2));
+                joint_data = [joint_data, NaN(size(joint_data, 1), 3 - size(joint_data, 2))];
+            end
+            
+            n_samples = size(joint_data, 1);
+            neutral_data = [neutral_data; joint_data(:, 1:3)];  % Only take first 3 columns
+            joint_names = [joint_names; repmat({joint_name}, n_samples, 1)];
+        end
+        
+        if ~isempty(neutral_data)
+            neutral_table = table(joint_names, neutral_data(:,1), neutral_data(:,2), neutral_data(:,3), ...
+                'VariableNames', {'Joint', 'X_coord', 'Y_coord', 'Z_coord'});
+            
+            filename = fullfile(output_folder, 'neutral_joint_markers.csv');
+            writetable(neutral_table, filename);
+        end
+    end
+    
+    % Export joint markers
+    if isfield(inputs_data, 'joints')
+        joints = inputs_data.joints;
+        joint_names = fieldnames(joints);
+        
+        % Create combined table for all joint markers
+        joints_data = [];
+        joint_name_list = {};
+        
+        for j = 1:length(joint_names)
+            joint_name = joint_names{j};
+            joint_data = joints.(joint_name);
+            
+            % Ensure joint_data has at least 3 columns, pad with NaN if necessary
+            if size(joint_data, 2) < 3
+                warning('Joint marker "%s" data has only %d columns instead of expected 3. Padding with NaN.', joint_name, size(joint_data, 2));
+                joint_data = [joint_data, NaN(size(joint_data, 1), 3 - size(joint_data, 2))];
+            end
+            
+            n_samples = size(joint_data, 1);
+            joints_data = [joints_data; joint_data(:, 1:3)];  % Only take first 3 columns
+            joint_name_list = [joint_name_list; repmat({joint_name}, n_samples, 1)];
+        end
+        
+        if ~isempty(joints_data)
+            joints_table = table(joint_name_list, joints_data(:,1), joints_data(:,2), joints_data(:,3), ...
+                'VariableNames', {'Joint', 'X_coord', 'Y_coord', 'Z_coord'});
+            
+            filename = fullfile(output_folder, 'joint_markers.csv');
+            writetable(joints_table, filename);
+        end
+    end
+    
 end 
