@@ -1149,6 +1149,56 @@ files = [
 tests = ["asttokens (>=2.1.0)", "coverage", "coverage-enable-subprocess", "ipython", "littleutils", "pytest", "rich ; python_version >= \"3.11\""]
 
 [[package]]
+name = "ezc3d"
+version = "1.5.19"
+description = "Easy to use C3D reader/writer for C++, Python, and Matlab"
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "ezc3d-1.5.19-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:04b681ba331e93121c8c21177a3c63455f6895988925d1ba2dcd8fceedb57c2a"},
+    {file = "ezc3d-1.5.19-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:2e9a4d248272655548b9ddf57ef36001f4c6c11192013b55350826f8625b49e9"},
+    {file = "ezc3d-1.5.19-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:5b5c2dd2ec99e6837fcfc24da5f41c41a1a695c299fb6b821c7e190f71bea240"},
+    {file = "ezc3d-1.5.19-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:15a57d017a31818330a96c82a89a72a2f85b45ff4e27d2ccdbea856bf172d69a"},
+    {file = "ezc3d-1.5.19-cp310-cp310-musllinux_1_2_i686.whl", hash = "sha256:bf05241e1833ec012e0b97d9d18d1bb08069aaf0842d137d7563522c30f4f02c"},
+    {file = "ezc3d-1.5.19-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:c423bd770e0f4563062336c8ca69eb69ba1247ec4a0b6884d36cd9dc97b88d55"},
+    {file = "ezc3d-1.5.19-cp310-cp310-win32.whl", hash = "sha256:74fc7b12fc0b396be473d5b44a249a861ac052991644725a1ad236f20b99c2f5"},
+    {file = "ezc3d-1.5.19-cp310-cp310-win_amd64.whl", hash = "sha256:69ba8c92cae08d381f010ceeeda16e348cc39be09ce560600771e19b53f9e436"},
+    {file = "ezc3d-1.5.19-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:2ddae6e65a49220bf828eea64ceae3d416bb1bce4fcf310b87270b5b19231625"},
+    {file = "ezc3d-1.5.19-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b098d67a10c0386f002f561f45e951c9d8562ae718ecdb38c785498ea056555c"},
+    {file = "ezc3d-1.5.19-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:9601b21d01e7be8e37be5a82093d548f5e426ed77356965d700aa165e979f40b"},
+    {file = "ezc3d-1.5.19-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e96a2abee84652e88ec9ccb2e9d7fa2cbd9dd56fc0b7470be4193d063996b798"},
+    {file = "ezc3d-1.5.19-cp311-cp311-musllinux_1_2_i686.whl", hash = "sha256:5124b4600d52c0f9eacd0c2afd5a1245f67719d79f2e727739d5c632e6ff5ebe"},
+    {file = "ezc3d-1.5.19-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:7da095e353466b0a00edb2a2ba2cdc74ab558aa5269c09bf9e4d7b92febbaa28"},
+    {file = "ezc3d-1.5.19-cp311-cp311-win32.whl", hash = "sha256:d512e70586801ffe7b7513a0b8ecc53ed968e3d25fdfa6527347cd789b904e14"},
+    {file = "ezc3d-1.5.19-cp311-cp311-win_amd64.whl", hash = "sha256:25656761813c49cf78d7c844b35b5f9c59593f430027cd984f3c617e145a9a91"},
+    {file = "ezc3d-1.5.19-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:a8a0a15f41a912ff5d5597f409abe3a52aa05225ed29a389241247e8929a60af"},
+    {file = "ezc3d-1.5.19-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:43bd399478a039b33a66a6db225330998529097f7b242d231829815d79de9cd3"},
+    {file = "ezc3d-1.5.19-cp312-cp312-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:562bde7254fa5d0d96c3fff8bb9509593d87b8e1c099178e6fe1171d337cf9ab"},
+    {file = "ezc3d-1.5.19-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:416dcfd7c9acb53a15687fe21d3c8b30037c9f7bfe54dff8111daa0b441f336d"},
+    {file = "ezc3d-1.5.19-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:bb68bd71048f77341de0de737cef8c8dd037c43dcac30511f13aa326707cd0dc"},
+    {file = "ezc3d-1.5.19-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:cb5993779b24a8bb7d402681c88e796ffb3cb4e0aa4c3eb585d4f25aa2e9a374"},
+    {file = "ezc3d-1.5.19-cp312-cp312-win32.whl", hash = "sha256:a8372a0206eddfef2524bfead258721c2ba50a3222fec2159e3c606f9fd0dab0"},
+    {file = "ezc3d-1.5.19-cp312-cp312-win_amd64.whl", hash = "sha256:7bbac6dce4476fff4991583bf409fba3e0a02b4efa325789fe035414676d2bbf"},
+    {file = "ezc3d-1.5.19-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:f298f75688ccfd2f0c78972baef3f445242ed82bec820df544daa39adfc4b586"},
+    {file = "ezc3d-1.5.19-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:acb67f9500f9e710fdaf5283784a725c23d6f5c067ac074946abe6854998be37"},
+    {file = "ezc3d-1.5.19-cp313-cp313-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:60baa6a75be7508e318d5ecbecb74c683f300a1f045815439c7198d94d807f9e"},
+    {file = "ezc3d-1.5.19-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3ce2ea49bd2d27dd64149d332bd2b5d18ed6147035f393dc5e50c1331b4190fa"},
+    {file = "ezc3d-1.5.19-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:c962db6493fe7538e4ed1c956377c66695cf4b291ba5e57f21416aa13d0e3411"},
+    {file = "ezc3d-1.5.19-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:5f9d97d78a566b27128a7fa690c79d65812966ddab40fd5c06a876d51c606891"},
+    {file = "ezc3d-1.5.19-cp313-cp313-win32.whl", hash = "sha256:4daa2eb2614cb64372b1c068d43718dbb9dfb0023d8b2850c59e7bdc4e40d0a0"},
+    {file = "ezc3d-1.5.19-cp313-cp313-win_amd64.whl", hash = "sha256:7aed022622f85eb1b323c05e34c11619f8fb8f69a4220d98428a477bbb6d784e"},
+    {file = "ezc3d-1.5.19-pp310-pypy310_pp73-macosx_10_15_x86_64.whl", hash = "sha256:7c1935ea888685de2b5b253743435c69a7bec133c1c5b172f05f79644aec8dff"},
+    {file = "ezc3d-1.5.19-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:b64a72025fb602de87f2daa9ce007977057bbe5ddbbc2466b872bcecfd116692"},
+    {file = "ezc3d-1.5.19-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a13c4a485f934d35b838e43b339cf7c96b33387383311a35d668905eff485d40"},
+    {file = "ezc3d-1.5.19-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:577cdd591b423563aeb67b56e4c1d982a998640e080dc5d767803494a762d11a"},
+    {file = "ezc3d-1.5.19.tar.gz", hash = "sha256:dced6b6bc8ce6dbabd3fb1a58459609e424379b42eb09a2df4b82ad38ff656c5"},
+]
+
+[package.dependencies]
+numpy = "*"
+
+[[package]]
 name = "fastjsonschema"
 version = "2.21.1"
 description = "Fastest Python implementation of JSON schema"
@@ -2105,17 +2155,18 @@ files = [
 
 [[package]]
 name = "kineticstoolkit"
-version = "0.7.2"
+version = "0.16.4"
 description = "An Open-Source Python Package to Facilitate Research in Biomechanics."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "kineticstoolkit-0.7.2-py3-none-any.whl", hash = "sha256:14a87b36302d950b1b22efb4bc453d0702a168ea1b31fd3ca649f5087f33974f"},
-    {file = "kineticstoolkit-0.7.2.tar.gz", hash = "sha256:929c25891c5fb49e2512d5186928b5967f31b9071d95ca18829c86ff761d5324"},
+    {file = "kineticstoolkit-0.16.4-py3-none-any.whl", hash = "sha256:db124c8bfe1e64ed48ee1d7a5b6901f4f164c5cb65d2a6e54f35ff27cb6c9f4b"},
+    {file = "kineticstoolkit-0.16.4.tar.gz", hash = "sha256:b97850fe1cef83747c67742d02991dd489252c1b5b2e6f7aefe5bce4e4ae02d3"},
 ]
 
 [package.dependencies]
+ezc3d = "*"
 limitedinteraction = "*"
 matplotlib = "*"
 pandas = "*"
@@ -5676,4 +5727,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "828fa623b9cf31afeb69af39616db21ff5512eb23c6069fbbee4a6162791e651"
+content-hash = "7d64b6ee5aab3390d07bcfd2f1c0d33a875157a529aa7fa4241b42de9d873239"

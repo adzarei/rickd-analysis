@@ -7,9 +7,11 @@ The data structure follows the MATLAB processing output format with:
 
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 import warnings
-
+import numpy as np
+import kineticstoolkit as ktk
+ 
 from .constants import RICKD_MATLAB_OUTPUT_FOLDER
 
 # File name constants
