@@ -239,9 +239,17 @@ class MatlabDataLoader:
         joint_data = {}
         suffix = NORM_ANGLES_SUFFIX if normalized else ANGLES_SUFFIX
 
-        for file_path in results_folder.glob(f"*{suffix}"):
-            joint_name = file_path.stem.replace(suffix, "")
-            joint_data[joint_name] = pd.read_csv(file_path)
+        for file_path in results_folder.glob(f"*{ANGLES_SUFFIX}"):
+            # Handle both _angles.csv and _norm_angles.csv
+            file_name = file_path.name
+            if file_name.endswith(NORM_ANGLES_SUFFIX):
+                if normalized:
+                    joint_name = file_name.replace(NORM_ANGLES_SUFFIX, "")
+                    joint_data[joint_name] = pd.read_csv(file_path)
+            elif file_name.endswith(ANGLES_SUFFIX):
+                if not normalized:
+                    joint_name = file_name.replace(ANGLES_SUFFIX, "")
+                    joint_data[joint_name] = pd.read_csv(file_path)
 
         return joint_data
 
@@ -262,9 +270,17 @@ class MatlabDataLoader:
         joint_data = {}
         suffix = NORM_VELOCITIES_SUFFIX if normalized else VELOCITIES_SUFFIX
 
-        for file_path in results_folder.glob(f"*{suffix}"):
-            joint_name = file_path.stem.replace(suffix, "")
-            joint_data[joint_name] = pd.read_csv(file_path)
+        for file_path in results_folder.glob(f"*{VELOCITIES_SUFFIX}"):
+            # Handle both _velocities.csv and _norm_velocities.csv
+            file_name = file_path.name
+            if file_name.endswith(NORM_VELOCITIES_SUFFIX):
+                if normalized:
+                    joint_name = file_name.replace(NORM_VELOCITIES_SUFFIX, "")
+                    joint_data[joint_name] = pd.read_csv(file_path)
+            elif file_name.endswith(VELOCITIES_SUFFIX):
+                if not normalized:
+                    joint_name = file_name.replace(VELOCITIES_SUFFIX, "")
+                    joint_data[joint_name] = pd.read_csv(file_path)
 
         return joint_data
 
