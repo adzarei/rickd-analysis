@@ -2,18 +2,6 @@
 
 This document explains how to use the enhanced MATLAB processing script that provides comprehensive data export, robust error handling, and organized output structure for easy analysis in Python.
 
-## Overview
-
-The enhanced processing pipeline provides:
-1. **Flexible processing modes**: Single file or batch processing of all files
-2. **Comprehensive data export**: Complete kinematics, gait analysis, and input data
-3. **Organized output structure**: Separate folders for inputs and results with clear hierarchy
-4. **Robust error handling**: Column validation, NaN padding, and detailed warnings
-5. **Progress tracking**: Visual waitbar with real-time status updates
-6. **Smart data filtering**: Only exports meaningful discrete variables (non-empty/non-zero)
-7. **Enhanced file naming**: Descriptive filenames for better data organization
-8. **Python integration**: CSV format optimized for pandas dataframes
-
 ## Files Structure
 
 ```
@@ -30,6 +18,26 @@ src/
 
 ## Configuration
 
+### Processing Modes
+
+The script supports three different processing modes:
+
+1. **Single Mode (`'single'`)**:
+   - Process only one specific file
+   - Set `SINGLE_FILE_INDEX` to the desired file number (1-based indexing)
+   - Useful for testing or debugging a specific file
+
+2. **List Mode (`'list'`)**:
+   - Process multiple specific files
+   - Set `FILE_INDEX_LIST` to an array of file indexes to process
+   - Perfect for processing subsets, re-running failed files, or batch processing specific sessions
+   - Example: `[1, 5, 10, 239, 500]` processes files at positions 1, 5, 10, 239, and 500
+
+3. **All Mode (`'all'`)**:
+   - Process all available files in the dataset
+   - No additional configuration needed
+   - Best for full dataset processing
+
 ### MATLAB Script Configuration
 
 Edit the configuration section in `processing_code_example_with_outputs.m`:
@@ -37,16 +45,45 @@ Edit the configuration section in `processing_code_example_with_outputs.m`:
 ```matlab
 %% Configuration
 
-% Set processing mode: 'single' or 'all'
-PROCESSING_MODE = 'single';  % Change to 'all' to process all files
+% Set processing mode: 'single', 'list', or 'all'
+PROCESSING_MODE = 'single';  % Change to 'all' to process all files, 'list' for specific files
 
 % Set which file to process if using single mode (1 = first file, 2 = second file, etc.)
 SINGLE_FILE_INDEX = 1;
+
+% Set list of file indexes to process if using list mode
+FILE_INDEX_LIST = [1, 5, 10, 239, 500];  % Example: process files at these indexes
 
 % Path configurations (update these for your system)
 code_folder = '/path/to/rickd-analysis/src/supplemental_material/Code';
 data_folder = '/path/to/data/Running Injury Clinic Kinematic Dataset/source_data';
 output_folder = '/path/to/data/Running Injury Clinic Kinematic Dataset/processed_data/matlab_output';
+```
+
+### Usage Examples
+
+#### Example 1: Process a Single File
+```matlab
+PROCESSING_MODE = 'single';
+SINGLE_FILE_INDEX = 239;  % Process the 239th file
+```
+
+#### Example 2: Process Specific Files
+```matlab
+PROCESSING_MODE = 'list';
+FILE_INDEX_LIST = [1, 5, 10, 239, 500];  % Process these 5 specific files
+```
+
+#### Example 3: Process All Files
+```matlab
+PROCESSING_MODE = 'all';
+% No additional configuration needed
+```
+
+#### Example 4: Re-process Failed Files (after checking processing_summary.csv)
+```matlab
+PROCESSING_MODE = 'list';
+FILE_INDEX_LIST = [42, 157, 203];  % Files that had errors in previous run
 ```
 
 ## Output Directory Structure
@@ -92,6 +129,7 @@ matlab_output/
 
 #### `processing_summary.csv`
 Contains processing status for each file:
+- **FileIndex**: File index number (for easy reprocessing using list mode)
 - **ID**: Subject and session identifier
 - **SubjectID**: Subject identifier only
 - **SessionID**: Session identifier only  

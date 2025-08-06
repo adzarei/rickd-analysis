@@ -1,13 +1,25 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % SCRIPT processing_code_example_with_outputs.m
 %
-%
 % Wrapper script for processing JSON files through the Running Injury Clinic
 % pipeline and saving all outputs for Python testing.
 %
-% Can process either a single file or all files in the dataset.
-% Outputs are saved in both MATLAB format (.mat) and CSV format for
-% easy loading into Python dataframes.
+% PROCESSING MODES:
+% - 'single': Process a single file specified by SINGLE_FILE_INDEX
+% - 'list':   Process multiple specific files specified by FILE_INDEX_LIST
+% - 'all':    Process all files in the dataset
+%
+% OUTPUTS:
+% - Individual .mat files for each processed file (full MATLAB results)
+% - Individual CSV files for each processed file (for Python compatibility)
+% - Combined processing summary CSV (processing_summary.csv)
+% - Combined discrete variables CSV (session_discrete_variables.csv)
+%
+% CONFIGURATION:
+% Set PROCESSING_MODE to control which files to process:
+% - For single file: Set SINGLE_FILE_INDEX (e.g., 239)
+% - For multiple files: Set FILE_INDEX_LIST (e.g., [1, 5, 10, 239, 500])
+% - For all files: No additional configuration needed
 %
 % Based on processing_code_example.m found in the same folder.
 %
@@ -15,15 +27,20 @@
 
 %% Configuration
 
-% Set processing mode: 'single' or 'all'
-PROCESSING_MODE = 'single';  % Change to 'all' to process all files
+% Set processing mode: 'single', 'list', or 'all'
+PROCESSING_MODE = 'all';  % Change to 'all' to process all files, 'list' for specific files
 
 % Set which file to process if using single mode (1 = first file, 2 = second file, etc.)
-SINGLE_FILE_INDEX = 1;
+SINGLE_FILE_INDEX = 239;
+
+% Set list of file indexes to process if using list mode
+FILE_INDEX_LIST = [213	239	301	307	314	385	559	1212	1229	1590	1977	2097	2127	2133	2134	2168	2195	2291	2314	2395	2398	2418	2498];  % Example: process files at these indexes
 
 fprintf('Processing mode: %s\n', PROCESSING_MODE);
 if strcmp(PROCESSING_MODE, 'single')
     fprintf('File index: %d\n', SINGLE_FILE_INDEX);
+elseif strcmp(PROCESSING_MODE, 'list')
+    fprintf('File indexes: [%s]\n', num2str(FILE_INDEX_LIST));
 end
 
 % code_folder = uigetdir('/Users/adrianzapaterreig/Documents/Personal/TFM/rickd-analysis/src/suplemental_material/Code');
@@ -55,16 +72,28 @@ if strcmp(PROCESSING_MODE, 'single')
     else
         error('File index %d exceeds available files (%d)', SINGLE_FILE_INDEX, length(files));
     end
+elseif strcmp(PROCESSING_MODE, 'list')
+    % Validate all indexes in the list
+    invalid_indices = FILE_INDEX_LIST(FILE_INDEX_LIST > length(files) | FILE_INDEX_LIST < 1);
+    if ~isempty(invalid_indices)
+        error('Invalid file indexes: [%s]. Available range is 1-%d', num2str(invalid_indices), length(files));
+    end
+    
+    file_indices = FILE_INDEX_LIST;
+    fprintf('Processing %d specified files:\n', length(file_indices));
+    for i = 1:length(file_indices)
+        fprintf('  Index %d: %s\n', file_indices(i), files(file_indices(i)).name);
+    end
 elseif strcmp(PROCESSING_MODE, 'all')
     file_indices = 1:length(files);
     fprintf('Processing all %d files...\n', length(files));
 else
-    error('Invalid PROCESSING_MODE. Use "single" or "all"');
+    error('Invalid PROCESSING_MODE. Use "single", "list", or "all"');
 end
 
 %% Initialize summary tracking
-summary_data = cell(length(file_indices), 6);  % Preallocate based on number of files to process
-summary_headers = {'ID', 'SubjectID', 'SessionID', 'JsonFile', 'ProcessingStatus', 'ErrorMessage'};
+summary_data = cell(length(file_indices), 7);  % Preallocate based on number of files to process
+summary_headers = {'FileIndex', 'ID', 'SubjectID', 'SessionID', 'JsonFile', 'ProcessingStatus', 'ErrorMessage'};
 summary_row = 0;  % Track current row
 
 %% Initialize discrete variables tracking
@@ -214,7 +243,7 @@ try
                 
         % Update summary
         summary_row = summary_row + 1;
-        summary_data(summary_row, :) = {id, subject_id, session_id, json_file, 'Success', ''};
+        summary_data(summary_row, :) = {i, id, subject_id, session_id, json_file, 'Success', ''};
         
         fprintf('Results saved for subject %s\n', subject_id);
         
@@ -228,7 +257,7 @@ try
         % Update summary with error
         [~, subject_id, ~] = fileparts(files(i).name);
         summary_row = summary_row + 1;
-        summary_data(summary_row, :) = {id, subject_id, session_id, json_file, 'Error', ME.message};
+        summary_data(summary_row, :) = {i, id, subject_id, session_id, json_file, 'Error', ME.message};
     end
     
     end
@@ -452,11 +481,22 @@ function export_results_to_csv(gait_data, output_folder)
         event_data = gait_data.gait_steps.event;
         
         if ~isempty(event_data)
-            event_table = table(event_data, 'VariableNames', {'EventIndex'});
-            event_table.EventNumber = (1:length(event_data))';
+            % Handle matrix format - event_data is typically a 7x8 matrix
+            % where rows represent different events and columns represent different aspects
+            [n_events, n_cols] = size(event_data);
             
-            % Reorder columns
-            event_table = event_table(:, {'EventNumber', 'EventIndex'});
+            % Create column names for the matrix
+            col_names = cell(1, n_cols);
+            for i = 1:n_cols
+                col_names{i} = sprintf('EventIndex_%d', i);
+            end
+            
+            % Create table with proper structure
+            event_table = array2table(event_data, 'VariableNames', col_names);
+            event_table.EventNumber = (1:n_events)';
+            
+            % Reorder to put EventNumber first
+            event_table = event_table(:, [{'EventNumber'}, col_names]);
             
             filename = fullfile(output_folder, 'gait_cycle_events.csv');
             writetable(event_table, filename);
@@ -469,77 +509,90 @@ end
 function [discrete_vars_data, discrete_vars_headers, discrete_vars_initialized] = ...
     collect_discrete_variables(gait_data, id, speed_output, label, hz, discrete_vars_data, discrete_vars_headers, discrete_vars_initialized)
     
+    % Define the variables we want to keep in the final dataset (33 populated variables)
+    % Each entry: {variable_name, row_index}
+    variables_config = {
+        {'Step_Width',                2};
+        {'Stride_Rate',               3};
+        {'Stride_Length',             4};
+        {'Swing_Time',                5};
+        {'Stance_Time',               6};
+        {'Pelvis_Peak_Drop_Angle',    7};
+        {'Pelvis_Drop_Excursion',     10};
+        {'Ankle_DF_Peak_Angle',       11};
+        {'Ankle_Eve_Peak_Angle',      15};
+        {'Ankle_Eve_Percent_Stance',  16};
+        {'Ankle_Eve_Excursion',       18};
+        {'Ankle_Rot_Peak_Angle',      19};
+        {'Ankle_Rot_Excursion',       22};
+        {'Knee_Flex_Peak_Angle',      23};
+        {'Knee_Add_Peak_Angle',       27};
+        {'Knee_Add_Excursion',        30};
+        {'Knee_Abd_Peak_Angle',       31};
+        {'Knee_Abd_Excursion',        34};
+        {'Knee_Rot_Peak_Angle',       35};
+        {'Knee_Rot_Excursion',        38};
+        {'Hip_Ext_Peak_Angle',        39};
+        {'Hip_Add_Peak_Angle',        43};
+        {'Hip_Add_Excursion',         46};
+        {'Hip_Rot_Peak_Angle',        47};
+        {'Hip_Rot_Excursion',         50};
+        {'Foot_Prog_Angle',           51};
+        {'Foot_Ang_At_HS',            52};
+        {'MHW_Exc_From_TO',           56};
+        {'Ankle_Eve_Peak_Vel',        59};
+        {'Ankle_Rot_Peak_Vel',        61};
+        {'Knee_Abd_Peak_Vel',         65};
+        {'Knee_Add_Peak_Vel',         67};
+        {'Hip_Abd_Peak_Vel',          69};
+        {'Knee_Rot_Peak_Vel',         71};
+        {'Hip_Rot_Peak_Vel',          72};
+        {'Pronation_Onset',           73};
+        {'Supination_Timing',         74};
+        {'Hip_Add_Peak_Vel',          75};
+        {'Pelvic_Drop_Peak_Vel',      76};
+        {'Vertical_Oscillation',      77}
+    };
+    
+    % Initialize headers once (consistent across all files)
+    if ~discrete_vars_initialized
+        discrete_vars_headers = {'ID', 'Speed_Output', 'Label', 'Hz'};
+        
+        % Add Left/Right columns for each variable
+        for i = 1:length(variables_config)
+            var_name = variables_config{i}{1};
+            discrete_vars_headers{end+1} = sprintf('%s_Left', var_name);
+            discrete_vars_headers{end+1} = sprintf('%s_Right', var_name);
+        end
+        discrete_vars_initialized = true;
+    end
+    
+    % Extract data for this file
     if isfield(gait_data, 'gait_steps') && isfield(gait_data.gait_steps, 'discrete_variables')
         discrete_vars = gait_data.gait_steps.discrete_variables;
-
-        % Define variable names for the 77 discrete variables
-        var_names = {
-            'Variable_1', 'Step_Width', 'Stride_Rate', 'Stride_Length', 'Swing_Time', ...
-            'Stance_Time', 'Pelvis_Peak_Drop_Angle', 'Pelvis_Drop_Percent_Stance', ...
-            'Pelvis_Drop_At_HS', 'Pelvis_Drop_Excursion', 'Ankle_DF_Peak_Angle', ...
-            'Ankle_DF_Percent_Stance', 'Ankle_DF_At_HS', 'Ankle_DF_Excursion', ...
-            'Ankle_Eve_Peak_Angle', 'Ankle_Eve_Percent_Stance', 'Ankle_Eve_At_HS', ...
-            'Ankle_Eve_Excursion', 'Ankle_Rot_Peak_Angle', 'Ankle_Rot_Percent_Stance', ...
-            'Ankle_Rot_At_HS', 'Ankle_Rot_Excursion', 'Knee_Flex_Peak_Angle', ...
-            'Knee_Flex_Percent_Stance', 'Knee_Flex_At_HS', 'Knee_Flex_Excursion', ...
-            'Knee_Add_Peak_Angle', 'Knee_Add_Percent_Stance', 'Knee_Add_At_HS', ...
-            'Knee_Add_Excursion', 'Knee_Abd_Peak_Angle', 'Knee_Abd_Percent_Stance', ...
-            'Knee_Abd_At_HS', 'Knee_Abd_Excursion', 'Knee_Rot_Peak_Angle', ...
-            'Knee_Rot_Percent_Stance', 'Knee_Rot_At_HS', 'Knee_Rot_Excursion', ...
-            'Hip_Ext_Peak_Angle', 'Hip_Ext_Percent_Stance', 'Hip_Ext_At_HS', ...
-            'Hip_Ext_Excursion', 'Hip_Add_Peak_Angle', 'Hip_Add_Percent_Stance', ...
-            'Hip_Add_At_HS', 'Hip_Add_Excursion', 'Hip_Rot_Peak_Angle', ...
-            'Hip_Rot_Percent_Stance', 'Hip_Rot_At_HS', 'Hip_Rot_Excursion', ...
-            'Foot_Prog_Angle', 'Foot_Ang_At_HS', 'Foot_Ang_At_TO', 'Med_Heel_Whip_Peak', ...
-            'MHW_Percent_Swing', 'MHW_Exc_From_TO', 'Ankle_DF_Peak_Vel', ...
-            'Ankle_DF_Vel_Percent_Stance', 'Ankle_Eve_Peak_Vel', 'Ankle_Eve_Vel_Percent_Stance', ...
-            'Ankle_Rot_Peak_Vel', 'Ankle_Rot_Vel_Percent_Stance', 'Knee_Flex_Peak_Vel', ...
-            'Knee_Flex_Vel_Percent_Stance', 'Knee_Abd_Peak_Vel', 'Knee_Abd_Vel_Percent_Stance', ...
-            'Knee_Add_Peak_Vel', 'Knee_Add_Vel_Percent_Stance', 'Hip_Abd_Peak_Vel', ...
-            'Hip_Abd_Vel_Percent_Stance', 'Knee_Rot_Peak_Vel', 'Hip_Rot_Peak_Vel', ...
-            'Pronation_Onset', 'Supination_Timing', 'Hip_Add_Peak_Vel', 'Pelvic_Drop_Peak_Vel', ...
-            'Vertical_Oscillation'
-        };
         
-        % Initialize headers if this is the first file
-        if ~discrete_vars_initialized
-            discrete_vars_headers = {'ID', 'Speed_Output', 'Label', 'Hz'};
-            
-            % Only add variables that have non-empty/non-zero values
-            for v = 1:min(length(var_names), size(discrete_vars, 1))
-                left_val = discrete_vars(v, 2);
-                right_val = discrete_vars(v, 3);
-                
-                % Check if values are non-empty and not just placeholders (0 or NaN)
-                if ~(isnan(left_val) && isnan(right_val)) && ~(left_val == 0 && right_val == 0)
-                    var_name = var_names{v};
-                    left_col_name = sprintf('%s_Left', var_name);
-                    right_col_name = sprintf('%s_Right', var_name);
-                    discrete_vars_headers{end+1} = left_col_name;
-                    discrete_vars_headers{end+1} = right_col_name;
-                end
-            end
-            discrete_vars_initialized = true;
-        end
-        
-        % Create row data for this file
+        % Create row data starting with metadata
         row_data = {id, speed_output, label, hz};
         
-        % Add discrete variable values (only for non-empty variables)
-        for v = 1:min(length(var_names), size(discrete_vars, 1))
-            left_val = discrete_vars(v, 2);
-            right_val = discrete_vars(v, 3);
+        % Add each variable's Left/Right values
+        for i = 1:length(variables_config)
+            row_index = variables_config{i}{2};
             
-            % Only add if values are non-empty and not just placeholders
-            if ~(isnan(left_val) && isnan(right_val)) && ~(left_val == 0 && right_val == 0)
-                row_data{end+1} = left_val;   % Left side
-                row_data{end+1} = right_val;  % Right side
+            if row_index <= size(discrete_vars, 1)
+                left_val = discrete_vars(row_index, 2);
+                right_val = discrete_vars(row_index, 3);
+            else
+                left_val = NaN;
+                right_val = NaN;
             end
+            
+            row_data{end+1} = left_val;   % Left side
+            row_data{end+1} = right_val;  % Right side
         end
         
-                 % Add this row to the combined data
-         discrete_vars_data = [discrete_vars_data; row_data];
-     end
+        % Add this row to the combined data
+        discrete_vars_data = [discrete_vars_data; row_data];
+    end
 end
 
 %% Helper function to export inputs data to CSV format
