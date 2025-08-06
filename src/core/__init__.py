@@ -3,6 +3,6 @@
 from . import constants
 from . import utils
 from . import matlab_data_loader
-from .matlab_data_loader import MatlabDataLoader, load_matlab_data
+from . matlab_data_loader import MatlabDataLoader
 
-__all__ = ['constants', 'utils', 'matlab_data_loader', 'MatlabDataLoader', 'load_matlab_data']
+__all__ = ['constants', 'utils', 'matlab_data_loader', 'MatlabDataLoader']

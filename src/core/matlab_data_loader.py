@@ -341,7 +341,14 @@ class MatlabDataLoader:
 
         joints = set()
         for file_path in results_folder.glob(f"*{ANGLES_SUFFIX}"):
-            joint_name = file_path.stem.replace(ANGLES_SUFFIX, "")
+            # Handle both _angles.csv and _norm_angles.csv
+            file_name = file_path.name
+            if file_name.endswith(NORM_ANGLES_SUFFIX):
+                joint_name = file_name.replace(NORM_ANGLES_SUFFIX, "")
+            elif file_name.endswith(ANGLES_SUFFIX):
+                joint_name = file_name.replace(ANGLES_SUFFIX, "")
+            else:
+                continue  # Skip files that don't match expected pattern
             joints.add(joint_name)
 
         return sorted(list(joints))
@@ -361,7 +368,7 @@ class MatlabDataLoader:
 
         markers = set()
         for file_path in inputs_folder.glob(f"*{MARKER_DATA_SUFFIX}"):
-            marker_name = file_path.stem.replace(MARKER_DATA_SUFFIX, "")
+            marker_name = file_path.name.replace(MARKER_DATA_SUFFIX, "")
             markers.add(marker_name)
 
         return sorted(markers)
@@ -400,16 +407,3 @@ class MatlabDataLoader:
             warnings.warn(f"Could not load processing summary: {e}")
 
         return info
-
-
-def load_matlab_data(matlab_output_folder: str = RICKD_MATLAB_OUTPUT_FOLDER) -> MatlabDataLoader:
-    """
-    Convenience function to create a MatlabDataLoader instance.
-    
-    Args:
-        matlab_output_folder: Path to MATLAB output folder
-        
-    Returns:
-        Configured MatlabDataLoader instance
-    """
-    return MatlabDataLoader(matlab_output_folder)
