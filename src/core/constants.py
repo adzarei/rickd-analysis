@@ -6,6 +6,9 @@ RICKD_PROCESSED_DATA_FOLDER = f"{RICKD_ROOT_DATA_FOLDER}/processed_data"
 RICKD_RESULTS_FOLDER = f"{RICKD_ROOT_DATA_FOLDER}/results"
 RICKD_PROY_RESOURCE_FOLDER = "/Users/adrianzapaterreig/Documents/Personal/TFM/rickd-analysis/resources"
 
+# MATLAB output data
+RICKD_MATLAB_OUTPUT_FOLDER = f"{RICKD_PROCESSED_DATA_FOLDER}/matlab_output"
+
 # Processed data files
 RICKD_RUNNING_METADATA_FILE = f"{RICKD_ROOT_DATA_FOLDER}/run_data_meta.csv"
 RICKD_RUNNING_METADATA_CLEANED_FILE = f"{RICKD_PROCESSED_DATA_FOLDER}/run_data_meta_cleaned.csv"
