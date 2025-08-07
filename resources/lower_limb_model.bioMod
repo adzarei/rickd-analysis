@@ -1,0 +1,261 @@
+version	4
+
+// SEGMENT DEFINITION
+segment	Pelvis
+	translations	xyz
+	rotations	xyz
+	mass	1.0
+	meshfile	../Geometries/pelvis.vtp
+	com	0 0 0
+	inertia
+		1.0	0.0	0.0
+		0.0	1.0	0.0
+		0.0	0.0	1.0
+endsegment
+
+// LEFT LEG
+segment	L_Thigh
+	parent	Pelvis
+	rotations	xyz
+	mass	1.0
+	meshfile	../Geometries/l_thigh.vtp
+	com	0 -0.5 0
+	inertia
+		1.0	0.0	0.0
+		0.0	1.0	0.0
+		0.0	0.0	1.0
+endsegment
+
+segment	L_Shank
+	parent	L_Thigh
+	rotations	xyz
+	mass	1.0
+	meshfile	../Geometries/l_shank.vtp
+	com	0 -0.5 0
+	inertia
+		1.0	0.0	0.0
+		0.0	1.0	0.0
+		0.0	0.0	1.0
+endsegment
+
+segment	L_Foot
+	parent	L_Shank
+	rotations	xyz
+	mass	1.0
+	meshfile	../Geometries/l_foot.vtp
+	com	0.1 0 0
+	inertia
+		1.0	0.0	0.0
+		0.0	1.0	0.0
+		0.0	0.0	1.0
+endsegment
+
+// RIGHT LEG
+segment	R_Thigh
+	parent	Pelvis
+	rotations	xyz
+	mass	1.0
+	meshfile	../Geometries/r_thigh.vtp
+	com	0 -0.5 0
+	inertia
+		1.0	0.0	0.0
+		0.0	1.0	0.0
+		0.0	0.0	1.0
+endsegment
+
+segment	R_Shank
+	parent	R_Thigh
+	rotations	xyz
+	mass	1.0
+	meshfile	../Geometries/r_shank.vtp
+	com	0 -0.5 0
+	inertia
+		1.0	0.0	0.0
+		0.0	1.0	0.0
+		0.0	0.0	1.0
+endsegment
+
+segment	R_Foot
+	parent	R_Shank
+	rotations	xyz
+	mass	1.0
+	meshfile	../Geometries/r_foot.vtp
+	com	0.1 0 0
+	inertia
+		1.0	0.0	0.0
+		0.0	1.0	0.0
+		0.0	0.0	1.0
+endsegment
+
+// JOINT DEFINITIONS
+joint	L_Hip
+	parent	Pelvis
+	child	L_Thigh
+	rotations	xyz
+endjoint
+
+joint	L_Knee
+	parent	L_Thigh
+	child	L_Shank
+	rotations	xyz
+endjoint
+
+joint	L_Ankle
+	parent	L_Shank
+	child	L_Foot
+	rotations	xyz
+endjoint
+
+joint	R_Hip
+	parent	Pelvis
+	child	R_Thigh
+	rotations	xyz
+endjoint
+
+joint	R_Knee
+	parent	R_Thigh
+	child	R_Shank
+	rotations	xyz
+endjoint
+
+joint	R_Ankle
+	parent	R_Shank
+	child	R_Foot
+	rotations	xyz
+endjoint
+
+// MARKER DEFINITIONS
+marker	L_ASIS
+	parent	Pelvis
+	position	0.14 0.02 0.12
+endmarker
+
+marker	R_ASIS
+	parent	Pelvis
+	position	0.14 0.02 -0.12
+endmarker
+
+marker	L_PSIS
+	parent	Pelvis
+	position	-0.13 0.02 0.08
+endmarker
+
+marker	R_PSIS
+	parent	Pelvis
+	position	-0.13 0.02 -0.08
+endmarker
+
+marker	L_thigh_1
+	parent	L_Thigh
+	position	0.1 -0.1 0.1
+endmarker
+
+marker	L_thigh_2
+	parent	L_Thigh
+	position	0.1 -0.1 -0.1
+endmarker
+
+marker	L_thigh_3
+	parent	L_Thigh
+	position	-0.1 -0.1 0.1
+endmarker
+
+marker	L_shank_1
+	parent	L_Shank
+	position	0.1 -0.1 0.1
+endmarker
+
+marker	L_shank_2
+	parent	L_Shank
+	position	0.1 -0.1 -0.1
+endmarker
+
+marker	L_shank_3
+	parent	L_Shank
+	position	-0.1 -0.1 0.1
+endmarker
+
+marker	L_foot_1
+	parent	L_Foot
+	position	0.1 0 0.05
+endmarker
+
+marker	L_foot_2
+	parent	L_Foot
+	position	0.1 0 -0.05
+endmarker
+
+marker	L_foot_3
+	parent	L_Foot
+	position	-0.1 0 0.05
+endmarker
+
+marker	R_thigh_1
+	parent	R_Thigh
+	position	0.1 -0.1 -0.1
+endmarker
+
+marker	R_thigh_2
+	parent	R_Thigh
+	position	0.1 -0.1 0.1
+endmarker
+
+marker	R_thigh_3
+	parent	R_Thigh
+	position	-0.1 -0.1 -0.1
+endmarker
+
+marker	R_shank_1
+	parent	R_Shank
+	position	0.1 -0.1 -0.1
+endmarker
+
+marker	R_shank_2
+	parent	R_Shank
+	position	0.1 -0.1 0.1
+endmarker
+
+marker	R_shank_3
+	parent	R_Shank
+	position	-0.1 -0.1 -0.1
+endmarker
+
+marker	R_foot_1
+	parent	R_Foot
+	position	0.1 0 -0.05
+endmarker
+
+marker	R_foot_2
+	parent	R_Foot
+	position	0.1 0 0.05
+endmarker
+
+marker	R_foot_3
+	parent	R_Foot
+	position	-0.1 0 -0.05
+endmarker
+
+// CONTACT DEFINITIONS (for GRF estimation)
+contact	L_heel_contact
+	parent	L_Foot
+	position	-0.05 -0.02 0
+	axis	yz
+endcontact
+
+contact	L_toe_contact
+	parent	L_Foot
+	position	0.15 -0.02 0
+	axis	yz
+endcontact
+
+contact	R_heel_contact
+	parent	R_Foot
+	position	-0.05 -0.02 0
+	axis	yz
+endcontact
+
+contact	R_toe_contact
+	parent	R_Foot
+	position	0.15 -0.02 0
+	axis	yz
+endcontact 
