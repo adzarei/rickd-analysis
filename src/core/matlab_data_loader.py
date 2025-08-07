@@ -9,7 +9,6 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 import warnings
-import numpy as np
 import kineticstoolkit as ktk
  
 from .constants import RICKD_MATLAB_OUTPUT_FOLDER
@@ -59,6 +58,11 @@ class MatlabDataLoader:
             matlab_output_folder: Path to the MATLAB output folder containing processed data
         """
         self.matlab_output_folder: Path = Path(matlab_output_folder)
+
+        # TODO: Add RICKD_RUNNING_METADATA_CLEANED_FILE to data loader
+        # TODO: consolidate metadata file with discrete variables
+        # TODO: Calculate health status.
+        # TODO: Add info like HZ, Age, Health status to TimeSeries objects
 
         if not self.matlab_output_folder.exists():
             raise FileNotFoundError(f"MATLAB output folder not found: {matlab_output_folder}")
