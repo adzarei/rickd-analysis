@@ -43,18 +43,18 @@ MARKER_DATA_TEMPLATE = "{marker}" + MARKER_DATA_SUFFIX
 class MatlabDataLoader:
     """
     Loader for MATLAB-processed gait analysis data.
-    
+
     This class provides methods to load:
     1. Individual session data (joint angles, velocities, etc.)
     2. Aggregate data (processing summary, discrete variables)
-    
+
     The data structure follows the MATLAB output format described in the documentation.
     """
 
     def __init__(self, matlab_output_folder: str = RICKD_MATLAB_OUTPUT_FOLDER):
         """
         Initialize the data loader.
-        
+
         Args:
             matlab_output_folder: Path to the MATLAB output folder containing processed data
         """
@@ -70,10 +70,10 @@ class MatlabDataLoader:
     def get_processing_summary(self, refresh_cache: bool = False) -> pd.DataFrame:
         """
         Load the processing summary containing status for all processed files.
-        
+
         Args:
             refresh_cache: Whether to reload the data from file
-            
+
         Returns:
             DataFrame with columns: FileIndex, ID, SubjectID, SessionID, 
                                   JsonFile, ProcessingStatus, ErrorMessage
@@ -90,10 +90,10 @@ class MatlabDataLoader:
     def get_discrete_variables(self, refresh_cache: bool = False) -> pd.DataFrame:
         """
         Load the discrete variables data for all successfully processed sessions.
-        
+
         Args:
             refresh_cache: Whether to reload the data from file
-            
+
         Returns:
             DataFrame with discrete gait variables for each session
         """
@@ -112,7 +112,7 @@ class MatlabDataLoader:
 
         NOTE: Looks at the folder structure to find all available sessions.
         It is prefered to use get_successful_sessions() instead.
-        
+
         Returns:
             List of session IDs (format: {subject_id}_{session_id})
         """
@@ -128,7 +128,7 @@ class MatlabDataLoader:
     def get_successful_sessions(self) -> List[str]:
         """
         Get list of session IDs that were successfully processed.
-        
+
         Returns:
             List of successfully processed session IDs
         """
@@ -139,7 +139,7 @@ class MatlabDataLoader:
     def get_failed_sessions(self) -> List[Tuple[str, str]]:
         """
         Get list of session IDs that failed processing along with error messages.
-        
+
         Returns:
             List of tuples (session_id, error_message)
         """
@@ -150,13 +150,13 @@ class MatlabDataLoader:
     def get_session_folder(self, session_id: str) -> Path:
         """
         Get the path to a specific session's data folder.
-        
+
         Args:
             session_id: Session identifier (format: {subject_id}_{session_id})
-            
+
         Returns:
             Path to the session folder
-            
+
         Raises:
             FileNotFoundError: If session folder doesn't exist
         """
@@ -170,12 +170,12 @@ class MatlabDataLoader:
                         normalized: bool = False) -> pd.DataFrame:
         """
         Load joint angle data for a specific session and joint.
-        
+
         Args:
             session_id: Session identifier
             joint: Joint name (e.g., 'L_ankle', 'R_knee', 'pelvis')
             normalized: Whether to load normalized (% gait cycle) or raw time series data
-            
+
         Returns:
             DataFrame with angle data:
             - If normalized=False: columns are TimeIndex, X_deg, Y_deg, Z_deg
@@ -199,12 +199,12 @@ class MatlabDataLoader:
                            normalized: bool = False) -> pd.DataFrame:
         """
         Load joint velocity data for a specific session and joint.
-        
+
         Args:
             session_id: Session identifier
             joint: Joint name (e.g., 'L_ankle', 'R_knee', 'pelvis')
             normalized: Whether to load normalized (% gait cycle) or raw time series data
-            
+
         Returns:
             DataFrame with velocity data:
             - If normalized=False: columns are TimeIndex, X_deg_per_s, Y_deg_per_s, Z_deg_per_s
@@ -227,11 +227,11 @@ class MatlabDataLoader:
     def get_all_joint_angles(self, session_id: str, normalized: bool = False) -> Dict[str, pd.DataFrame]:
         """
         Load angle data for all joints in a session.
-        
+
         Args:
             session_id: Session identifier
             normalized: Whether to load normalized or raw data
-            
+
         Returns:
             Dictionary mapping joint names to their angle DataFrames
         """
@@ -258,11 +258,11 @@ class MatlabDataLoader:
     def get_all_joint_velocities(self, session_id: str, normalized: bool = False) -> Dict[str, pd.DataFrame]:
         """
         Load velocity data for all joints in a session.
-        
+
         Args:
             session_id: Session identifier
             normalized: Whether to load normalized or raw data
-            
+
         Returns:
             Dictionary mapping joint names to their velocity DataFrames
         """
@@ -270,7 +270,6 @@ class MatlabDataLoader:
         results_folder = session_folder / RESULTS_FOLDER_NAME
 
         joint_data = {}
-        suffix = NORM_VELOCITIES_SUFFIX if normalized else VELOCITIES_SUFFIX
 
         for file_path in results_folder.glob(f"*{VELOCITIES_SUFFIX}"):
             # Handle both _velocities.csv and _norm_velocities.csv
@@ -289,12 +288,21 @@ class MatlabDataLoader:
     def get_gait_events(self, session_id: str) -> pd.DataFrame:
         """
         Load gait cycle events for a session.
-        
+
         Args:
             session_id: Session identifier
-            
+
         Returns:
-            DataFrame with gait events (EventNumber, EventIndex)
+            DataFrame with gait events with meaningful column names:
+            - EventNumber: Gait cycle number
+            - L_TD: Left touchdown frame index
+            - L_Midstance: Left midstance frame index
+            - L_TO: Left toe-off frame index
+            - L_heelwhip: Left maximum heel whip during swing frame index
+            - R_TD: Right touchdown frame index
+            - R_Midstance: Right midstance frame index
+            - R_TO: Right toe-off frame index
+            - R_heelwhip: Right maximum heel whip during swing frame index
         """
         session_folder = self.get_session_folder(session_id)
         results_folder = session_folder / RESULTS_FOLDER_NAME
@@ -303,15 +311,32 @@ class MatlabDataLoader:
         if not events_file.exists():
             raise FileNotFoundError(f"Gait events file not found: {events_file}")
 
-        return pd.read_csv(events_file)
+        df = pd.read_csv(events_file)
+
+        # Rename columns to meaningful event names based on the extended event matrix
+        # From documentation: [L_TD, L_Midstance, L_TO, L_heelwhip, R_TD, R_Midstance, R_TO, R_heelwhip]
+        event_column_mapping = {
+            'EventIndex_1': 'L_TD',
+            'EventIndex_2': 'L_Midstance', 
+            'EventIndex_3': 'L_TO',
+            'EventIndex_4': 'L_heelwhip',
+            'EventIndex_5': 'R_TD',
+            'EventIndex_6': 'R_Midstance',
+            'EventIndex_7': 'R_TO',
+            'EventIndex_8': 'R_heelwhip'
+        }
+
+        df = df.rename(columns=event_column_mapping)
+
+        return df
 
     def get_joint_centers(self, session_id: str) -> pd.DataFrame:
         """
         Load joint center coordinates for a session.
-        
+
         Args:
             session_id: Session identifier
-            
+
         Returns:
             DataFrame with joint centers (Joint, X_coord, Y_coord, Z_coord)
         """
@@ -327,11 +352,11 @@ class MatlabDataLoader:
     def get_marker_data(self, session_id: str, marker: str) -> pd.DataFrame:
         """
         Load marker trajectory data for a specific marker.
-        
+
         Args:
             session_id: Session identifier
             marker: Marker name (e.g., 'L_foot_1', 'R_thigh_2', 'pelvis_3')
-            
+
         Returns:
             DataFrame with marker trajectory (TimeIndex, X_coord, Y_coord, Z_coord)
         """
@@ -347,10 +372,10 @@ class MatlabDataLoader:
     def get_available_joints(self, session_id: str) -> List[str]:
         """
         Get list of available joints for a session.
-        
+
         Args:
             session_id: Session identifier
-            
+
         Returns:
             List of joint names available in this session
         """
@@ -374,10 +399,10 @@ class MatlabDataLoader:
     def get_available_markers(self, session_id: str) -> List[str]:
         """
         Get list of available markers for a session.
-        
+
         Args:
             session_id: Session identifier
-            
+
         Returns:
             List of marker names available in this session
         """
@@ -394,10 +419,10 @@ class MatlabDataLoader:
     def get_session_info(self, session_id: str) -> Dict:
         """
         Get comprehensive information about a session.
-        
+
         Args:
             session_id: Session identifier
-            
+
         Returns:
             Dictionary with session information including available data types
         """
@@ -425,3 +450,181 @@ class MatlabDataLoader:
             warnings.warn(f"Could not load processing summary: {e}")
 
         return info
+
+    def get_joint_angles_timeseries(self, session_id: str, joint: str, 
+                                   normalized: bool = False, 
+                                   include_events: bool = False) -> ktk.TimeSeries:
+        """
+        Load joint angle data as a ktk.TimeSeries object.
+
+        Args:
+            session_id: Session identifier
+            joint: Joint name (e.g., 'L_ankle', 'R_knee', 'pelvis')
+            normalized: Whether to load normalized (% gait cycle) or raw time series data
+            include_events: Whether to include gait events (only for unnormalized data)
+
+        Returns:
+            ktk.TimeSeries object with angle data
+        """
+        df = self.get_joint_angles(session_id, joint, normalized)
+
+        ts = ktk.TimeSeries()
+
+        if normalized:
+            ts.time = df["PercentGaitCycle"]
+            ts = ts.add_data(f"{joint}_angle", df[["X_deg", "Y_deg", "Z_deg"]].values)
+        else:
+            ts.time = df["TimeIndex"]
+            ts = ts.add_data(f"{joint}_angle", df[["X_deg", "Y_deg", "Z_deg"]].values)
+
+            if include_events:
+                events_df = self.get_gait_events(session_id)
+                if joint.startswith('L_'):
+                    event_names = ['L_TD', 'L_TO']
+                elif joint.startswith('R_'):
+                    event_names = ['R_TD', 'R_TO']
+                else:
+                    # For bilateral or unspecified joints, add all events i.e. pelvis
+                    event_names = ['L_TD', 'L_TO', 'R_TD', 'R_TO']
+
+                # Add relevant events
+                for _, event_row in events_df.iterrows():
+                    for event_name in event_names:
+                        if not pd.isna(event_row[event_name]):
+                            ts = ts.add_event(event_row[event_name], event_name)
+
+        return ts
+
+    def get_joint_velocities_timeseries(self, session_id: str, joint: str, 
+                                       normalized: bool = False,
+                                       include_events: bool = False) -> ktk.TimeSeries:
+        """
+        Load joint velocity data as a ktk.TimeSeries object.
+
+        Args:
+            session_id: Session identifier
+            joint: Joint name (e.g., 'L_ankle', 'R_knee', 'pelvis')
+            normalized: Whether to load normalized (% gait cycle) or raw time series data
+            include_events: Whether to include gait events (only for unnormalized data)
+
+        Returns:
+            ktk.TimeSeries object with velocity data
+        """
+        df = self.get_joint_velocities(session_id, joint, normalized)
+
+        ts = ktk.TimeSeries()
+
+        if normalized:
+            ts.time = df["PercentGaitCycle"]
+            ts = ts.add_data(f"{joint}_velocity", df[["X_deg_per_s", "Y_deg_per_s", "Z_deg_per_s"]].values)
+        else:
+            ts.time = df["TimeIndex"]
+            ts = ts.add_data(f"{joint}_velocity", df[["X_deg_per_s", "Y_deg_per_s", "Z_deg_per_s"]].values)
+
+            if include_events:
+                events_df = self.get_gait_events(session_id)
+                if joint.startswith('L_'):
+                    event_names = ['L_TD', 'L_TO']
+                elif joint.startswith('R_'):
+                    event_names = ['R_TD', 'R_TO']
+                else:
+                    event_names = ['L_TD', 'L_TO', 'R_TD', 'R_TO']
+
+                for _, event_row in events_df.iterrows():
+                    for event_name in event_names:
+                        if not pd.isna(event_row[event_name]):
+                            ts = ts.add_event(event_row[event_name], event_name)
+
+        return ts
+
+    def get_marker_data_timeseries(self, session_id: str, marker: str,
+                                  include_events: bool = False) -> ktk.TimeSeries:
+        """
+        Load marker trajectory data as a ktk.TimeSeries object.
+
+        Args:
+            session_id: Session identifier
+            marker: Marker name (e.g., 'L_foot_1', 'R_thigh_2', 'pelvis_3')
+            include_events: Whether to include gait events
+
+        Returns:
+            ktk.TimeSeries object with marker trajectory data
+        """
+        df = self.get_marker_data(session_id, marker)
+
+        ts = ktk.TimeSeries()
+        ts.time = df["TimeIndex"]
+        ts = ts.add_data(f"{marker}_trajectory", df[["X_coord", "Y_coord", "Z_coord"]].values)
+
+        if include_events:
+            events_df = self.get_gait_events(session_id)
+            if marker.startswith('L_'):
+                event_names = ['L_TD', 'L_TO']
+            elif marker.startswith('R_'):
+                event_names = ['R_TD', 'R_TO']
+            else:
+                event_names = ['L_TD', 'L_TO', 'R_TD', 'R_TO']
+
+            for _, event_row in events_df.iterrows():
+                for event_name in event_names:
+                    if not pd.isna(event_row[event_name]):
+                        ts = ts.add_event(event_row[event_name], event_name)
+
+        return ts
+
+    def get_all_joint_angles_timeseries(self, session_id: str, normalized: bool = False,
+                                       include_events: bool = False) -> Dict[str, ktk.TimeSeries]:
+        """
+        Load angle data for all joints as ktk.TimeSeries objects.
+
+        Args:
+            session_id: Session identifier
+            normalized: Whether to load normalized or raw data
+            include_events: Whether to include gait events (only for unnormalized data)
+
+        Returns:
+            Dictionary mapping joint names to their ktk.TimeSeries objects
+        """
+        joint_timeseries = {}
+        available_joints = self.get_available_joints(session_id)
+
+        for joint in available_joints:
+            try:
+                joint_timeseries[joint] = self.get_joint_angles_timeseries(
+                    session_id, joint, normalized, include_events
+                )
+            except FileNotFoundError as e:
+                # Note: There is joint discrepancies between the raw and normalized data
+                # TODO: Add normalized flag to get_available_joints
+                word = "normalized " if normalized else ""
+                warnings.warn(f"Could not load TimeSeries for {word}joint {joint}: {e}")
+
+        return joint_timeseries
+
+    def get_all_joint_velocities_timeseries(self, session_id: str, normalized: bool = False,
+                                           include_events: bool = False) -> Dict[str, ktk.TimeSeries]:
+        """
+        Load velocity data for all joints as ktk.TimeSeries objects.
+
+        Args:
+            session_id: Session identifier
+            normalized: Whether to load normalized or raw data
+            include_events: Whether to include gait events (only for unnormalized data)
+
+        Returns:
+            Dictionary mapping joint names to their ktk.TimeSeries objects
+        """
+        joint_timeseries = {}
+        available_joints = self.get_available_joints(session_id)
+
+        for joint in available_joints:
+            try:
+                joint_timeseries[joint] = self.get_joint_velocities_timeseries(
+                    session_id, joint, normalized, include_events
+                )
+            except FileNotFoundError as e:
+                warnings.warn(f"Could not load TimeSeries for joint {joint}: {e}")
+
+        return joint_timeseries
+
+
