@@ -628,3 +628,29 @@ class MatlabDataLoader:
         return joint_timeseries
 
 
+def segment_ts_by_stance_phase(ts: ktk.TimeSeries, side: str) -> List[ktk.TimeSeries]:
+    """
+    Segment a TimeSeries object into stance phases based on touchdown and toe-off events.
+
+    Args:
+        ts: The TimeSeries object to segment
+        side: Side of the joint ('L' or 'R')
+
+    Returns:
+        List of TimeSeries objects, one for each stance phase
+    """
+    # Find touchdown and toe-off events for the specified side
+    td_name = f"{side}_TD"
+    to_name = f"{side}_TO"
+
+    # Extract event times (as indices) for touchdown and toe-off
+    td_count = [1 for event in ts.events if event.name == td_name]
+
+    stance_segments = []
+    for i in range(len(td_count)):
+        segment = ts.get_ts_between_events(td_name, to_name, i, i, inclusive=True)
+        segment = segment.trim_events()
+        stance_segments.append(segment)
+
+    return stance_segments
+
