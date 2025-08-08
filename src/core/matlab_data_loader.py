@@ -12,6 +12,7 @@ import warnings
 import kineticstoolkit as ktk
  
 from .constants import RICKD_MATLAB_OUTPUT_FOLDER
+from .constants import RICKD_SESSION_DATA_FULL_CLEANED_FILE
 
 # File name constants
 PROCESSING_SUMMARY_FILE_NAME = "processing_summary.csv"
@@ -59,10 +60,10 @@ class MatlabDataLoader:
         """
         self.matlab_output_folder: Path = Path(matlab_output_folder)
 
-        # TODO: Add RICKD_RUNNING_METADATA_CLEANED_FILE to data loader
-        # TODO: consolidate metadata file with discrete variables
-        # TODO: Calculate health status.
-        # TODO: Add info like HZ, Age, Health status to TimeSeries objects
+        # TODO: Add RICKD_SESSION_DATA_FULL_CLEANED_FILE to data loader
+        # TODO: consolidate session_data_full_cleaned.csv file with discrete_variables by performing an inner join by ID and selecting, via a list, the columns to keep from each side.
+        # TODO: Add is_healthy status to discrete variables and metadata file. -> logic injury_code == "no_injury"
+        # TODO: Add info like HZ, Age, Health status to TimeSeries object that are returned. i.e. ts.add_data_info("Metadata", "Hz", "200")
 
         if not self.matlab_output_folder.exists():
             raise FileNotFoundError(f"MATLAB output folder not found: {matlab_output_folder}")
@@ -70,6 +71,9 @@ class MatlabDataLoader:
         # Cache for loaded data to avoid repeated file reads
         self._processing_summary_cache: pd.DataFrame | None = None
         self._discrete_variables_cache: pd.DataFrame | None = None
+        self._session_data_full_cleaned_cache: pd.DataFrame | None = None
+        # Cache for consolidated discrete + metadata join
+        self._discrete_with_metadata_cache: pd.DataFrame | None = None
 
     def get_processing_summary(self, refresh_cache: bool = False) -> pd.DataFrame:
         """
@@ -109,6 +113,79 @@ class MatlabDataLoader:
             self._discrete_variables_cache = pd.read_csv(discrete_file)
 
         return self._discrete_variables_cache.copy()
+
+    # New: Load cleaned session metadata file
+    def get_session_data_full_cleaned(self, refresh_cache: bool = False) -> pd.DataFrame:
+        """
+        Load the cleaned session metadata file (subject/session demographics and injury info).
+
+        Returns:
+            DataFrame with columns like: id, sub_id, age, Gender, injury_code, ... and is_injured column.
+        """
+        
+        if self._session_data_full_cleaned_cache is None or refresh_cache:
+            metadata_path = Path(RICKD_SESSION_DATA_FULL_CLEANED_FILE)
+            if not metadata_path.exists():
+                raise FileNotFoundError(
+                    f"Cleaned session data file not found: {metadata_path}. "
+                    "Generate it first or set the correct path in constants."
+                )
+            df_meta = pd.read_csv(metadata_path)
+            self._session_data_full_cleaned_cache = df_meta
+        return self._session_data_full_cleaned_cache.copy()
+
+
+    def get_discrete_with_metadata(
+        self,
+        columns_from_discrete: Optional[List[str]] = None,
+        columns_from_metadata: Optional[List[str]] = None,
+        refresh_cache: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Return an inner-joined DataFrame between discrete variables and cleaned session metadata.
+
+        Args:
+            columns_from_discrete: Subset of discrete variables columns to keep (default keeps all)
+            columns_from_metadata: Subset of metadata columns to keep from the cleaned file (default keeps useful subset)
+            refresh_cache: Whether to refresh caches for both sources
+
+        Returns:
+            Joined DataFrame on session identifier (discrete.ID == metadata.id) containing selected columns and an is_healthy flag.
+        """
+        if self._discrete_with_metadata_cache is None or refresh_cache:
+            d_full = self.get_discrete_variables(refresh_cache=refresh_cache)
+            m_full = self.get_session_data_full_cleaned(refresh_cache=refresh_cache)
+            if 'ID' not in d_full.columns:
+                raise KeyError("Expected column 'ID' in discrete variables for joining.")
+            if 'id' not in m_full.columns:
+                raise KeyError("Expected column 'id' in metadata for joining.")
+            self._discrete_with_metadata_cache = d_full.merge(m_full, left_on='ID', right_on='id', how='inner')
+
+        joined_full = self._discrete_with_metadata_cache
+
+        selected_cols: List[str] = []
+        if columns_from_discrete is None:
+            d_cols = [c for c in self.get_discrete_variables().columns if c in joined_full.columns]
+            selected_cols.extend(d_cols)
+        else:
+            missing = [c for c in columns_from_discrete if c not in joined_full.columns]
+            if missing:
+                warnings.warn(f"Some requested discrete columns are missing and will be ignored: {missing}")
+            selected_cols.extend([c for c in columns_from_discrete if c in joined_full.columns])
+
+        if columns_from_metadata is None:
+            default_meta_cols = ['id', 'sub_id', 'age', 'Gender', 'injury_code', 'is_healthy']
+            selected_cols.extend([c for c in default_meta_cols if c in joined_full.columns])
+        else:
+            missing = [c for c in columns_from_metadata if c not in joined_full.columns]
+            if missing:
+                warnings.warn(f"Some requested metadata columns are missing and will be ignored: {missing}")
+            selected_cols.extend([c for c in columns_from_metadata if c in joined_full.columns])
+
+        # Deduplicate while preserving order
+        seen = set()
+        ordered_cols = [c for c in selected_cols if not (c in seen or seen.add(c))]
+        return joined_full.loc[:, ordered_cols]
 
     def get_available_sessions(self) -> List[str]:
         """
@@ -455,6 +532,59 @@ class MatlabDataLoader:
 
         return info
 
+    # Internal: build a metadata dict for a session
+    def _get_session_metadata(self, session_id: str) -> Dict[str, Optional[str]]:
+        metadata: Dict[str, Optional[str]] = {'session_id': session_id}
+        # From discrete variables
+        try:
+            discrete_df = self.get_discrete_variables()
+            row_d = discrete_df.loc[discrete_df['ID'] == session_id]
+            if not row_d.empty:
+                r = row_d.iloc[0]
+                metadata['subject_id'] = r.get('sub_id', None)
+                metadata['hz'] = r.get('Hz', None)
+                metadata['speed'] = r.get('Speed_Output', None)
+            else:
+                raise ValueError(f"Session {session_id} not found in discrete_variables")
+        except Exception as e:
+            warnings.warn(f"Could not load discrete_variables for ts metadata: {e}")
+            pass
+        # From cleaned metadata
+        try:
+            meta_df = self.get_session_data_full_cleaned()
+            row_m = meta_df.loc[meta_df['id'] == session_id]
+            if not row_m.empty:
+                r = row_m.iloc[0]
+                metadata['age'] = r.get('age', None)
+                metadata['gender'] = r.get('Gender', None)
+                metadata['height'] = r.get('Height', None)
+                metadata['weight'] = r.get('Weight', None)
+                metadata['dominant_leg'] = r.get('DominantLeg', None)
+                metadata['injury_code'] = r.get('injury_code', None)
+                metadata['injured_side_code'] = r.get('injured_side_code', None)
+                metadata['injury_severity_code'] = r.get('injury_severity_code', None)
+                metadata['injured_joint_code'] = r.get('injured_joint_code', None)
+            else:
+                raise ValueError(f"Session {session_id} not found in session_data_full_cleaned")
+        except Exception as e:
+            warnings.warn(f"Could not load session_data_full_cleaned for ts metadata: {e}")
+            pass
+        return metadata
+
+    # Internal: attach metadata to a TimeSeries in a safe way
+    def _add_metadata_to_timeseries(self, ts: ktk.TimeSeries, session_id: str) -> ktk.TimeSeries:
+        meta = self._get_session_metadata(session_id)
+        for key, val in meta.items():
+            if val is None:
+                continue
+            # Store as string for compatibility
+            try:
+                ts = ts.add_data_info("Metadata", key, str(val))
+            except Exception as e:
+                warnings.warn(f"Could not add metadata to TimeSeries: {e}")
+                pass
+        return ts
+
     def get_joint_angles_timeseries(self, session_id: str, joint: str, 
                                    normalized: bool = False, 
                                    include_events: bool = False) -> ktk.TimeSeries:
@@ -497,6 +627,8 @@ class MatlabDataLoader:
                         if not pd.isna(event_row[event_name]):
                             ts = ts.add_event(event_row[event_name], event_name)
 
+        # Enrich with metadata
+        ts = self._add_metadata_to_timeseries(ts, session_id)
         return ts
 
     def get_joint_velocities_timeseries(self, session_id: str, joint: str, 
@@ -539,6 +671,8 @@ class MatlabDataLoader:
                         if not pd.isna(event_row[event_name]):
                             ts = ts.add_event(event_row[event_name], event_name)
 
+        # Enrich with metadata
+        ts = self._add_metadata_to_timeseries(ts, session_id)
         return ts
 
     def get_marker_data_timeseries(self, session_id: str, marker: str,
@@ -574,6 +708,8 @@ class MatlabDataLoader:
                     if not pd.isna(event_row[event_name]):
                         ts = ts.add_event(event_row[event_name], event_name)
 
+        # Enrich with metadata
+        ts = self._add_metadata_to_timeseries(ts, session_id)
         return ts
 
     def get_all_joint_angles_timeseries(self, session_id: str, normalized: bool = False,
