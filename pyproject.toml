@@ -30,6 +30,7 @@ pydantic = "^2.11.7"
 jupyter = "^1.1.1"
 scipy = "^1.11.0"
 kineticstoolkit = "^0.16.4"
+dtw-python = "^1.5.3"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.0.0"
