@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 import warnings
 import kineticstoolkit as ktk
+import numpy as np
  
 from .constants import RICKD_MATLAB_OUTPUT_FOLDER
 from .constants import RICKD_SESSION_DATA_FULL_CLEANED_FILE
@@ -534,7 +535,6 @@ class MatlabDataLoader:
 
         return info
 
-    # Internal: build a metadata dict for a session
     def _get_session_metadata(self, session_id: str) -> Dict[str, Optional[str]]:
         metadata: Dict[str, Optional[str]] = {'session_id': session_id}
         # From discrete variables
@@ -573,7 +573,6 @@ class MatlabDataLoader:
             pass
         return metadata
 
-    # Internal: attach metadata to a TimeSeries in a safe way
     def _add_metadata_to_timeseries(self, ts: ktk.TimeSeries, session_id: str) -> ktk.TimeSeries:
         meta = self._get_session_metadata(session_id)
         for key, val in meta.items():
@@ -769,6 +768,60 @@ class MatlabDataLoader:
 
         return joint_timeseries
 
+    def get_available_markers_timeseries(self, session_id: str, include_events: bool = False, scaling_factor = 350, offset=None) -> ktk.TimeSeries:
+        """
+        Load all available markers' trajectories into a single ktk.TimeSeries.
+
+        - Time is computed from frame indices converted to seconds using the session sampling rate (Hz).
+        - Each marker is added as a data variable with shape (N x 4): X, Y, Z, 1 where the last column is a
+          homogeneous coordinate.
+        - Positions are scaled and offset as: (coords / scaling_factor) + offset.
+
+        Args:
+            session_id: Session identifier
+            include_events: If True, add L_TD, L_TO, R_TD, R_TO events to the TimeSeries
+            scaling_factor: Divisor applied to marker coordinates before adding them (default 350)
+            offset: Offset [ox, oy, oz] added to scaled coordinates (default [1, 0, 1])
+
+        Returns:
+            ktk.TimeSeries with all available markers as separate data entries keyed by marker name.
+        """
+
+        if offset is None:
+            offset = [1, 0, 1]
+
+        # Prepare base TimeSeries and time vector
+        ts = ktk.TimeSeries()
+        all_markers = self.get_available_markers(session_id)
+        if not all_markers:
+            return ts
+
+        sampling_rate = self.get_discrete_variables()["Hz"].values[0]
+        first_marker_df = self.get_marker_data(session_id, all_markers[0])
+        time_array = (first_marker_df["TimeIndex"].values - 1) / int(sampling_rate)
+        ts.time = time_array
+
+        # Add each marker as a data variable
+        for marker_key in all_markers:
+            marker_df = self.get_marker_data(session_id, marker_key)
+            marker_positions_3d = (marker_df[["X_coord", "Y_coord", "Z_coord"]].values / scaling_factor) + offset
+            marker_positions_4d = np.column_stack([marker_positions_3d, np.ones(marker_positions_3d.shape[0])])
+            ts = ts.add_data(marker_key, marker_positions_4d)
+
+        # Optionally add gait events (both left and right)
+        if include_events:
+            try:
+                events_df = self.get_gait_events(session_id)
+                for _, event_row in events_df.iterrows():
+                    for event_name in ["L_TD", "L_TO", "R_TD", "R_TO"]:
+                        if event_name in event_row and not pd.isna(event_row[event_name]):
+                            ts = ts.add_event(event_row[event_name], event_name)
+            except Exception as e:
+                warnings.warn(f"Could not add gait events to markers TimeSeries: {e}")
+
+        # Enrich with metadata
+        ts = self._add_metadata_to_timeseries(ts, session_id)
+        return ts
 
 def segment_ts_by_stance_phase(ts: ktk.TimeSeries, side: str) -> List[ktk.TimeSeries]:
     """
