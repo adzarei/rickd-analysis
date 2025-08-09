@@ -159,7 +159,9 @@ class MatlabDataLoader:
                 raise KeyError("Expected column 'ID' in discrete variables for joining.")
             if 'id' not in m_full.columns:
                 raise KeyError("Expected column 'id' in metadata for joining.")
-            self._discrete_with_metadata_cache = d_full.merge(m_full, left_on='ID', right_on='id', how='inner')
+            
+            # Fail if column conflict. TODO: Handle edge case...
+            self._discrete_with_metadata_cache = d_full.merge(m_full, left_on='ID', right_on='id', how='inner', suffixes=(False, False))
 
         joined_full = self._discrete_with_metadata_cache
 
@@ -174,8 +176,8 @@ class MatlabDataLoader:
             selected_cols.extend([c for c in columns_from_discrete if c in joined_full.columns])
 
         if columns_from_metadata is None:
-            default_meta_cols = ['id', 'sub_id', 'age', 'Gender', 'injury_code', 'is_healthy']
-            selected_cols.extend([c for c in default_meta_cols if c in joined_full.columns])
+            meta_cols = [c for c in self.get_session_data_full_cleaned().columns if c in joined_full.columns]
+            selected_cols.extend(meta_cols)
         else:
             missing = [c for c in columns_from_metadata if c not in joined_full.columns]
             if missing:
