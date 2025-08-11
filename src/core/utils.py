@@ -97,3 +97,8 @@ def save_df_as_table_image(df, target_path, figsize=(15, 10), fontsize=9, scale=
 
     plt.savefig(target_path, bbox_inches='tight', dpi=dpi)
     plt.close(fig)
+
+
+def extract_subject_id(index: pd.Index) -> pd.Index:
+    """Extract the subject ID from the index."""
+    return index.str.split("_").str[0]
