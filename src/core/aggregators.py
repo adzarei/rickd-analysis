@@ -76,7 +76,8 @@ class BaseJointCurveAggregator:
         Returns:
             The representative stacked (angle XYZ + velocity XYZ per joint) matrix for a session.
         """
-        # Initialize if i has not been provided in the constructor or in this function.
+        # Initialize if it has not been provided in the constructor or in this function.
+        # You usually only need to provide a loader here if you want a local loader like in parallel processing.
         if self.loader is None:
             if loader is None:
                 loader = MatlabDataLoader()
