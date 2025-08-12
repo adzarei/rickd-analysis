@@ -52,7 +52,15 @@ def plot_single_curves(single_curve, title: str, Y_axis_unit: str = "Degs", X_ax
     plt.ylabel(Y_axis_unit)
 
 
-def apply_continuous_curve_registration(curves, max_iter=10000, tol=1e-4, plot_dtw=False, plot_rate=10, plot_type="twoway", step_pattern=dtw.rabinerJuangStepPattern(6, "c")):
+def apply_continuous_curve_registration(
+            curves: np.ndarray,
+            max_iter: int = 10000,
+            tol: float = 1e-4,
+            plot_dtw: bool = False,
+            plot_rate: int = 10,
+            plot_type: str = "twoway",
+            step_pattern: dtw.StepPattern = dtw.rabinerJuangStepPattern(6, "c")
+        ) -> np.ndarray:
     """
     Apply continuous curve registration to a group of curves and return the mean curve.
 

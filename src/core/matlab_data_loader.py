@@ -61,11 +61,6 @@ class MatlabDataLoader:
         """
         self.matlab_output_folder: Path = Path(matlab_output_folder)
 
-        # TODO: Add RICKD_SESSION_DATA_FULL_CLEANED_FILE to data loader
-        # TODO: consolidate session_data_full_cleaned.csv file with discrete_variables by performing an inner join by ID and selecting, via a list, the columns to keep from each side.
-        # TODO: Add is_healthy status to discrete variables and metadata file. -> logic injury_code == "no_injury"
-        # TODO: Add info like HZ, Age, Health status to TimeSeries object that are returned. i.e. ts.add_data_info("Metadata", "Hz", "200")
-
         if not self.matlab_output_folder.exists():
             raise FileNotFoundError(f"MATLAB output folder not found: {matlab_output_folder}")
 
