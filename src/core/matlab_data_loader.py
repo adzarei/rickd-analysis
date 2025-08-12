@@ -662,7 +662,7 @@ class MatlabDataLoader:
                 events_df = self.get_gait_events(session_id)
                 if joint.startswith('L_'):
                     event_names = ['L_TD', 'L_TO']
-                elif joint.startswith('R_'):
+                elif joint.startswith('R_'): 
                     event_names = ['R_TD', 'R_TO']
                 else:
                     event_names = ['L_TD', 'L_TO', 'R_TD', 'R_TO']

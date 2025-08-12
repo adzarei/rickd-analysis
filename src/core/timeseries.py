@@ -5,16 +5,19 @@ import matplotlib.pyplot as plt
 import warnings
 import numpy as np
 import dtw as dtw
+from typing import Optional
 
-
-def get_group_curves(ts, side: str = "L", num_points: int = 101):
-    """ Get the group of joint angle curves for a given session id and joint name."""
+def get_group_curves(ts, side: str = "L", num_points: int = 101, data_key: Optional[str] = None):
+    """Get the group of joint angle curves for a given session id and joint name."""
     ts_normalized_on_stance = ktk.cycles.time_normalize(
         ts, event_name1=f"{side}_TD", event_name2=f"{side}_TO", n_points=num_points
     )
 
     data = ktk.cycles.stack(ts_normalized_on_stance, n_points=num_points)
-    return data[next(iter(data))]  # Return first key
+    if data_key is None:
+        return data[next(iter(data))]  # Return first key
+    else:
+        return data[data_key]
 
 
 def plot_group_curves(group_of_curves, group_name: str, data_description: str = "Joint Angle", Y_axis_unit: str = "Degs", X_axis_unit: str = "% of Stance Phase"):
