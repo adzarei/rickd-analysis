@@ -7,14 +7,13 @@ import numpy as np
 import dtw as dtw
 
 
-def get_group_curves(ts):
+def get_group_curves(ts, side: str = "L", num_points: int = 101):
     """ Get the group of joint angle curves for a given session id and joint name."""
-    NUM_POINTS = 101
     ts_normalized_on_stance = ktk.cycles.time_normalize(
-        ts, event_name1="L_TD", event_name2="L_TO", n_points=NUM_POINTS
+        ts, event_name1=f"{side}_TD", event_name2=f"{side}_TO", n_points=num_points
     )
 
-    data = ktk.cycles.stack(ts_normalized_on_stance, n_points=NUM_POINTS)
+    data = ktk.cycles.stack(ts_normalized_on_stance, n_points=num_points)
     return data[next(iter(data))]  # Return first key
 
 
@@ -30,6 +29,24 @@ def plot_group_curves(group_of_curves, group_name: str, data_description: str = 
         plt.title(f"{group_name} - {data_description} {axis} axis - N={n_cycles}")
         plt.xlabel(X_axis_unit)
         plt.ylabel(Y_axis_unit)
+
+
+def plot_single_curves(single_curve, title: str, Y_axis_unit: str = "Degs", X_axis_unit: str = "% of Stance Phase"):
+    """Plot a single curve of joint angle."""
+    plt.figure(figsize=(10, 10))
+    shape = single_curve.shape
+
+    n_cycles = 1
+    # When more than one dimension, we have a group of curves.
+    if len(shape) > 1:
+        n_cycles = single_curve.shape[0]
+        for i_cycle in range(n_cycles):
+            plt.plot(single_curve[i_cycle])
+    else:
+         plt.plot(single_curve)
+    plt.title(title)
+    plt.xlabel(X_axis_unit)
+    plt.ylabel(Y_axis_unit)
 
 
 def apply_continuous_curve_registration(curves, max_iter=10000, tol=1e-4, plot_dtw=False, plot_rate=10, plot_type="twoway", step_pattern=dtw.rabinerJuangStepPattern(6, "c")):

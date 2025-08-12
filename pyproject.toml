@@ -32,6 +32,7 @@ scipy = "^1.11.0"
 kineticstoolkit = "^0.16.4"
 dtw-python = "^1.5.3"
 feature-engine = "^1.8.3"
+imbalanced-learn = "^0.13.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.0.0"
