@@ -7,6 +7,7 @@ from .matlab_data_loader import MatlabDataLoader
 from . import explainability
 from . import model_selection
 from . import feature_importance
+from . import outlier_detection
 
 __all__ = [
     "constants",
