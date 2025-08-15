@@ -216,7 +216,8 @@ def plot_all_features_overlay(
     features: Optional[List[str]] = None,
     plots_per_row: int = 1,
     x_label: str = "% of Stance Phase",
-    y_label: str = "Scaled Value"
+    y_label: str = "Scaled Value",
+    n_samples: Optional[int] = None
 ) -> None:
     """
     Plot selected time series features with all samples overlaid.
@@ -229,6 +230,9 @@ def plot_all_features_overlay(
         max_features: Maximum number of features to plot (if None, plots all features)
         features: List of feature names to plot (if None, plots all or up to max_features)
         plots_per_row: Number of plots per row in the figure grid
+        x_label: Label for the x-axis
+        y_label: Label for the y-axis
+        n_samples: Number of samples to plot (if None, plots all samples)
     """
 
     time_steps = np.arange(X_ts.shape[1])  # (T,)
@@ -251,6 +255,9 @@ def plot_all_features_overlay(
         figsize=(figsize[0] * n_cols, figsize[1] * n_rows),
         squeeze=False
     )
+
+    if n_samples is not None:
+        X_ts = X_ts[:n_samples]
 
     for idx, feature_idx in enumerate(feature_indices):
         row = idx // n_cols
