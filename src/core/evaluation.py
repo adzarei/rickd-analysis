@@ -5,31 +5,66 @@ from typing import Tuple, List, Optional, Union
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import precision_recall_curve, balanced_accuracy_score, f1_score
 import tensorflow as tf
 from matplotlib.colors import LinearSegmentedColormap
 
 
-def pick_threshold_by_f1(y_true: np.ndarray, y_score: np.ndarray) -> Tuple[float, dict]:
-    """Pick the threshold that maximizes the F1-Score.
+def pick_threshold(
+    y_true: np.ndarray,
+    y_score: np.ndarray,
+    method: str = "f1"
+) -> Tuple[float, dict]:
+    """
+    Pick the threshold that maximizes the F1-Score or macro F1-Score.
+
+    NOTE: Normally used on the validation set.
 
     Args:
-        y_true: (N,)
-        y_score: (N,)
+        y_true: (N,) True labels
+        y_score: (N,) Predicted probabilities
+        method: "f1" (default) for standard F1, "macro" for macro F1, balanced for balanced accuracy
 
     Returns:
         threshold: float
         stats: dict
-            best_f1: float
-            P: float
-            R: float
+            For method="f1":
+                best_f1: float
+                P: float
+                R: float
+            For method="macro":
+                macro_f1: float
+            For method="balanced":
+                balanced_accuracy: float
     """
-    p, r, th = precision_recall_curve(y_true, y_score)  # th has len-1 compared to p/r
-    f1 = 2*p*r/(p+r+1e-12)
-    # align thresholds to same length
-    th = np.append(th, th[-1])
-    i = np.nanargmax(f1)
-    return float(th[i]), {"best_f1": float(f1[i]), "P": float(p[i]), "R": float(r[i])}
+    if method == "f1":
+        p, r, th = precision_recall_curve(y_true, y_score)
+        f1 = 2 * p * r / (p + r + 1e-12)
+        th = np.append(th, th[-1])  # align thresholds to same length
+        i = np.nanargmax(f1)
+        return float(th[i]), {"best_f1": float(f1[i]), "P": float(p[i]), "R": float(r[i])}
+    elif method == "macro":
+        ths = np.unique(np.concatenate([[0.0], np.sort(y_score), [1.0]]))
+        best = {"thr": 0.5, "macro_f1": -1}
+        for t in ths:
+            y_hat = (y_score >= t).astype(int)
+            f1_pos = f1_score(y_true, y_hat, pos_label=1, zero_division=0)
+            f1_neg = f1_score(1 - y_true, 1 - y_hat, pos_label=1, zero_division=0)
+            macro = 0.5 * (f1_pos + f1_neg)
+            if macro > best["macro_f1"]:
+                best = {"thr": float(t), "macro_f1": float(macro)}
+        return best["thr"], {"macro_f1": best["macro_f1"]}
+    elif method == "balanced":
+        ths = np.unique(np.concatenate([[0.0], np.sort(y_score), [1.0]]))
+        best = {"thr": 0.5, "balanced_accuracy": -1}
+        for t in ths:
+            y_hat = (y_score >= t).astype(int)
+            balanced_accuracy = balanced_accuracy_score(y_true, y_hat)
+            if balanced_accuracy > best["balanced_accuracy"]:
+                best = {"thr": float(t), "balanced_accuracy": float(balanced_accuracy)}
+        return best["thr"], {"balanced_accuracy": best["balanced_accuracy"]}
+    else:
+        raise ValueError(f"Unknown method: {method}")
 
 
 def get_unilateral_feature_names(channels: List[str], side: str = "L") -> List[str]:
