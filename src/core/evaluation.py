@@ -1,14 +1,28 @@
 """This module contains functions for evaluating the performance of the model."""
 
-from typing import Tuple, List, Optional, Union
+from typing import Tuple, List, Optional, Union, Any
+from abc import ABC, abstractmethod
 
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import precision_recall_curve, balanced_accuracy_score, f1_score
+from sklearn.metrics import (
+    precision_recall_curve,
+    balanced_accuracy_score,
+    f1_score,
+    average_precision_score,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+    accuracy_score,
+    classification_report,
+    ConfusionMatrixDisplay,
+    RocCurveDisplay,
+    PrecisionRecallDisplay,
+)
+
 import tensorflow as tf
 from matplotlib.colors import LinearSegmentedColormap
-
 
 def pick_threshold(
     y_true: np.ndarray,
@@ -402,4 +416,221 @@ def analyze_sample_saliency(model: tf.keras.Model,
         'healthy_top_features': healthy_top_idx,
         'injured_importance': injured_importance,
         'healthy_importance': healthy_importance
+    }
+
+
+class BasePredictor(ABC):
+    """Base class for model predictors with threshold-based binary classification."""
+    
+    def __init__(self, model: tf.keras.Model):
+        """Initialize predictor with a trained model.
+        
+        Args:
+            model: Trained Keras model
+        """
+        self.model = model
+    
+    @abstractmethod
+    def predict_proba(self, *inputs) -> np.ndarray:
+        """Predict probabilities for given inputs.
+
+        Args:
+            *inputs: Variable input arguments
+        
+        Returns:
+            Array of prediction probabilities
+        """
+        pass
+    
+    def predict(self, threshold: float, *inputs) -> np.ndarray:
+        """Predict binary labels using threshold.
+        
+        Args:
+            threshold: Decision threshold
+            *inputs: Variable input arguments
+            
+        Returns:
+            Binary predictions (0 or 1)
+        """
+        y_pred_proba = self.predict_proba(*inputs)
+        return (y_pred_proba > threshold).astype(int).flatten()
+
+
+class BilateralPredictor(BasePredictor):
+    """Predictor for bilateral models that take left and right inputs simultaneously."""
+    
+    def predict_proba(self, X_left: np.ndarray, X_right: np.ndarray) -> np.ndarray:
+        """Predict probabilities using bilateral inputs.
+        
+        Args:
+            X_left: Left side input data
+            X_right: Right side input data
+            
+        Returns:
+            Array of prediction probabilities
+        """
+        return self.model.predict([X_left, X_right])
+
+
+class UnilateralPredictor(BasePredictor):
+    """Predictor for unilateral models that predict each side separately then aggregate."""
+    
+    def __init__(self, model: tf.keras.Model, aggregation: str = "mean", verbose: bool = False):
+        """Initialize unilateral predictor.
+        
+        Args:
+            model: Trained Keras model that takes single-side input
+            aggregation: How to aggregate left/right predictions ("mean" or "max")
+            verbose: Whether to print verbose output
+        """
+        super().__init__(model)
+        if aggregation not in ["mean", "max"]:
+            raise ValueError("aggregation must be 'mean' or 'max'")
+        self.aggregation = aggregation
+        self.verbose = verbose
+
+    def predict_proba(self, X_left: np.ndarray, X_right: np.ndarray) -> np.ndarray:
+        """Predict probabilities using unilateral model on both sides.
+        
+        Args:
+            X_left: Left side input data
+            X_right: Right side input data
+            
+        Returns:
+            Array of aggregated prediction probabilities
+        """
+        # Predict each side separately
+        y_pred_proba_left = self.model.predict(X_left)
+        y_pred_proba_right = self.model.predict(X_right)
+        
+        # Aggregate predictions
+        if self.aggregation == "max":
+            if self.verbose:
+                print("Aggregating predictions with max method")
+            return np.maximum(y_pred_proba_left, y_pred_proba_right)
+        else:  # mean
+            if self.verbose:
+                print("Aggregating predictions with mean method")
+            return 0.5 * (y_pred_proba_left + y_pred_proba_right)
+
+
+def plot_confusion_matrix(y_true, y_pred, labels, name):
+    """Plot confusion matrix.
+    
+    Args:
+        y_true: True labels
+        y_pred: Predicted labels
+        labels: Labels to display
+        name: Name of the model
+    """
+    plt.figure()
+    cm_disp = ConfusionMatrixDisplay.from_predictions(
+        y_true, 
+        y_pred, 
+        display_labels=labels,
+        labels=[1, 0]
+    )
+    cm_disp.ax_.xaxis.set_label_position('top')
+    cm_disp.ax_.xaxis.set_ticks_position('top')
+    cm_disp.ax_.xaxis.set_label_text('Predicted')
+    cm_disp.ax_.yaxis.set_label_text('Actual')
+    cm_disp.ax_.set_title(f'Confusion Matrix - {name}')
+
+def plot_roc_curve(y_true, y_pred_proba, name):
+    """Plot ROC curve.
+    
+    Args:
+        y_true: True labels
+        y_pred_proba: Predicted probabilities
+        name: Name of the model
+    """
+    plt.figure()
+    ax = plt.gca()
+    ax.plot([0, 1], [0, 1], linestyle='--', color='gray', label='AUC = 0.5')
+
+    roc_disp = RocCurveDisplay.from_predictions(
+        y_true, 
+        y_pred_proba, 
+        name=name,
+        ax=ax,
+    )
+    roc_disp.ax_.set_title('ROC Curve')
+
+def plot_precision_recall_curve(y_true, y_pred_proba, name):
+    """Plot precision-recall curve.
+    
+    Args:
+        y_true: True labels
+        y_pred_proba: Predicted probabilities
+        name: Name of the model
+    """
+    plt.figure()
+    pr_disp = PrecisionRecallDisplay.from_predictions(
+        y_true,
+        y_pred_proba,
+        name=name
+    )
+    pr_disp.ax_.set_title('Precision-Recall Curve')
+
+
+def model_test_summary(model: tf.keras.Model,
+                        inputs: Any,
+                        y_true: np.ndarray,
+                        threshold: float = 0.5,
+                        predictor: BasePredictor = None,
+                    ) -> None:
+    """Plot test results for a model.
+    
+    Args:
+        model: Trained Keras model
+        inputs: Test data
+        y_true: Test labels
+        threshold: Decision threshold
+        predictor: implementation of BasePredictor
+    """
+    if predictor is None:
+        predictor = BilateralPredictor(model)
+    
+    y_pred_proba = predictor.predict_proba(*inputs)
+    y_pred = predictor.predict(threshold, *inputs)
+    
+    test_accuracy = accuracy_score(y_true, y_pred)
+    test_f1 = f1_score(y_true, y_pred)
+    test_avg_precision = average_precision_score(y_true, y_pred_proba)
+    test_precision = precision_score(y_true, y_pred)
+    test_recall = recall_score(y_true, y_pred)
+    test_auc_roc = roc_auc_score(y_true, y_pred_proba)
+    test_prevalence = np.mean(y_true == 1)
+
+    print("="*50)
+    print("MODEL EVALUATION RESULTS")
+    print("="*50)
+    print(f"=== Test Prevalence: {100 * test_prevalence:.2f} ===")
+    print(f"Test AUC-PR : {test_avg_precision:.4f}")
+    print(f"Test AUC-ROC : {test_auc_roc:.4f}")
+    print("="*50)
+    print(f"=== Threshold Dependent Metrics ===")
+    print(f"=== Threshold: {threshold:.2f} ===")
+    print("="*50)
+    print(f"Test Accuracy : {test_accuracy:.4f}")
+    print(f"Test F1 Score : {test_f1:.4f}")
+    print(f"Test Precision : {test_precision:.4f}")
+    print(f"Test Recall : {test_recall:.4f}")
+
+    print("\n=== CLASSIFICATION REPORT ===")
+    print(classification_report(y_true, y_pred, labels=[1,0], target_names=['Injured', 'Not Injured']))
+
+    plot_confusion_matrix(y_true, y_pred, labels=['Injured', 'Not Injured'], name=model.name)
+    plot_roc_curve(y_true, y_pred_proba, name=model.name)
+    plot_precision_recall_curve(y_true, y_pred_proba, name=model.name)
+
+    return {
+        "accuracy": test_accuracy,
+        "f1": test_f1,
+        "precision": test_precision,
+        "recall": test_recall,
+        "auc_roc": test_auc_roc,
+        "auc_pr": test_avg_precision,
+        "prevalence": test_prevalence,
+        "threshold": threshold,
     }
