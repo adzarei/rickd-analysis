@@ -100,36 +100,52 @@ def get_unilateral_feature_names(channels: List[str], side: str = "L") -> List[s
 
 
 def compute_timeseries_saliency(model: tf.keras.Model,
-                               ts_input: np.ndarray,
+                               ts_input,  # Can be np.ndarray or List[np.ndarray] for bilateral models
                                meta_input: Optional[np.ndarray] = None,
                                target_class: Optional[int] = None,
                                method: str = "vanilla") -> np.ndarray:
     """Compute saliency maps for timeseries data with optional metadata.
     
-    Works with both single-input (timeseries only) and multi-input (timeseries + metadata) models.
+    Works with single-input, multi-input (timeseries + metadata), and bilateral models.
     
     Args:
         model: Trained Keras model
         ts_input: Timeseries input array of shape (batch_size, time_steps, features)
+                 OR list of two arrays for bilateral models [left, right]
         meta_input: Optional metadata input array of shape (batch_size, meta_features)
         target_class: Class to compute gradients for (0 or 1), if None uses predicted class
         method: Saliency method ('vanilla', 'integrated', 'grad_x_input')
     
     Returns:
         saliency_map: Gradient-based saliency map for timeseries input
+                     For bilateral models, returns list of saliency maps [left_saliency, right_saliency]
     """
-    # Determine if model has multiple inputs
-    has_metadata = meta_input is not None and len(model.inputs) > 1
+    # Check if this is a bilateral model (list of two timeseries inputs)
+    is_bilateral = isinstance(ts_input, list) and len(ts_input) == 2 and len(model.inputs) == 2
     
-    if method == "vanilla":
-        return _compute_vanilla_timeseries_saliency(model, ts_input, meta_input, target_class, has_metadata)
-    elif method == "integrated":
-        return _compute_integrated_timeseries_saliency(model, ts_input, meta_input, target_class, has_metadata)
-    elif method == "grad_x_input":
-        vanilla_grads = _compute_vanilla_timeseries_saliency(model, ts_input, meta_input, target_class, has_metadata)
-        return vanilla_grads * ts_input
+    # Determine if model has metadata
+    has_metadata = meta_input is not None and len(model.inputs) > 1 and not is_bilateral
+    
+    if is_bilateral:
+        if method == "vanilla":
+            return _compute_vanilla_bilateral_saliency(model, ts_input, target_class)
+        elif method == "integrated":
+            return _compute_integrated_bilateral_saliency(model, ts_input, target_class)
+        elif method == "grad_x_input":
+            vanilla_grads = _compute_vanilla_bilateral_saliency(model, ts_input, target_class)
+            return [grad * inp for grad, inp in zip(vanilla_grads, ts_input)]
+        else:
+            raise ValueError(f"Unknown method: {method}. Choose from 'vanilla', 'integrated', 'grad_x_input'")
     else:
-        raise ValueError(f"Unknown method: {method}. Choose from 'vanilla', 'integrated', 'grad_x_input'")
+        if method == "vanilla":
+            return _compute_vanilla_timeseries_saliency(model, ts_input, meta_input, target_class, has_metadata)
+        elif method == "integrated":
+            return _compute_integrated_timeseries_saliency(model, ts_input, meta_input, target_class, has_metadata)
+        elif method == "grad_x_input":
+            vanilla_grads = _compute_vanilla_timeseries_saliency(model, ts_input, meta_input, target_class, has_metadata)
+            return vanilla_grads * ts_input
+        else:
+            raise ValueError(f"Unknown method: {method}. Choose from 'vanilla', 'integrated', 'grad_x_input'")
 
 
 def _compute_vanilla_timeseries_saliency(model: tf.keras.Model,
@@ -237,6 +253,100 @@ def _compute_integrated_timeseries_saliency(model: tf.keras.Model,
     return integrated_grads.numpy()
 
 
+def _compute_vanilla_bilateral_saliency(model: tf.keras.Model,
+                                       ts_inputs: list,
+                                       target_class: Optional[int]) -> list:
+    """Internal function for vanilla gradient computation for bilateral models."""
+    left_input, right_input = ts_inputs
+    
+    # Convert to tensors
+    left_tensor = tf.Variable(left_input.astype(np.float32), dtype=tf.float32)
+    right_tensor = tf.Variable(right_input.astype(np.float32), dtype=tf.float32)
+    
+    with tf.GradientTape() as tape:
+        tape.watch([left_tensor, right_tensor])
+        predictions = model([left_tensor, right_tensor])
+        
+        if target_class is None:
+            # Use predicted class
+            if len(predictions.shape) > 1 and predictions.shape[1] > 1:
+                target_scores = tf.reduce_max(predictions, axis=1)
+            else:
+                target_scores = tf.squeeze(predictions)
+        else:
+            # Use specified class
+            if len(predictions.shape) > 1 and predictions.shape[1] > 1:
+                target_scores = predictions[:, target_class]
+            else:
+                if target_class == 1:
+                    target_scores = tf.squeeze(predictions)
+                else:
+                    target_scores = 1 - tf.squeeze(predictions)
+    
+    gradients = tape.gradient(target_scores, [left_tensor, right_tensor])
+    return [grad.numpy() for grad in gradients]
+
+
+def _compute_integrated_bilateral_saliency(model: tf.keras.Model,
+                                          ts_inputs: list,
+                                          target_class: Optional[int],
+                                          m_steps: int = 50) -> list:
+    """Internal function for integrated gradient computation for bilateral models."""
+    left_input, right_input = ts_inputs
+    
+    # Use zero baselines
+    left_baseline = np.zeros_like(left_input)
+    right_baseline = np.zeros_like(right_input)
+    
+    # Convert to tensors
+    left_input_tf = tf.convert_to_tensor(left_input.astype(np.float32), dtype=tf.float32)
+    right_input_tf = tf.convert_to_tensor(right_input.astype(np.float32), dtype=tf.float32)
+    left_baseline_tf = tf.convert_to_tensor(left_baseline.astype(np.float32), dtype=tf.float32)
+    right_baseline_tf = tf.convert_to_tensor(right_baseline.astype(np.float32), dtype=tf.float32)
+    
+    # Generate alphas
+    alphas = tf.linspace(0.0, 1.0, m_steps + 1)
+    
+    # Initialize integrated gradients
+    left_integrated_grads = tf.zeros_like(left_input_tf)
+    right_integrated_grads = tf.zeros_like(right_input_tf)
+    
+    for alpha in alphas:
+        # Interpolate between baseline and input
+        left_interpolated = left_baseline_tf + alpha * (left_input_tf - left_baseline_tf)
+        right_interpolated = right_baseline_tf + alpha * (right_input_tf - right_baseline_tf)
+        
+        with tf.GradientTape() as tape:
+            tape.watch([left_interpolated, right_interpolated])
+            predictions = model([left_interpolated, right_interpolated])
+            
+            if target_class is None:
+                # Use predicted class
+                if len(predictions.shape) > 1 and predictions.shape[1] > 1:
+                    target_scores = tf.reduce_max(predictions, axis=1)
+                else:
+                    target_scores = tf.squeeze(predictions)
+            else:
+                # Use specified class
+                if len(predictions.shape) > 1 and predictions.shape[1] > 1:
+                    target_scores = predictions[:, target_class]
+                else:
+                    if target_class == 1:
+                        target_scores = tf.squeeze(predictions)
+                    else:
+                        target_scores = 1 - tf.squeeze(predictions)
+        
+        grads = tape.gradient(target_scores, [left_interpolated, right_interpolated])
+        left_integrated_grads += grads[0] / m_steps
+        right_integrated_grads += grads[1] / m_steps
+    
+    # Scale by input difference
+    left_integrated_grads *= (left_input_tf - left_baseline_tf)
+    right_integrated_grads *= (right_input_tf - right_baseline_tf)
+    
+    return [left_integrated_grads.numpy(), right_integrated_grads.numpy()]
+
+
 def plot_timeseries_saliency(saliency_map: np.ndarray,
                             channels: List[str],
                             sample_idx: int = 0,
@@ -312,7 +422,7 @@ def plot_timeseries_saliency(saliency_map: np.ndarray,
 
 
 def analyze_sample_saliency(model: tf.keras.Model,
-                           X_ts: np.ndarray,
+                           X_ts,  # Can be np.ndarray or List[np.ndarray] for bilateral models
                            y: np.ndarray,
                            channels: List[str],
                            X_meta: Optional[np.ndarray] = None,
@@ -325,7 +435,7 @@ def analyze_sample_saliency(model: tf.keras.Model,
     
     Args:
         model: Trained Keras model
-        X_ts: Timeseries test data
+        X_ts: Timeseries test data (single array or list of two arrays for bilateral models)
         y: Labels
         channels: Feature names
         X_meta: Optional metadata
@@ -353,11 +463,21 @@ def analyze_sample_saliency(model: tf.keras.Model,
     
     print(f"Analyzing injured sample (index {injured_idx}) and healthy sample (index {healthy_idx})")
     
+    # Check if this is a bilateral model
+    is_bilateral = isinstance(X_ts, list) and len(X_ts) == 2 and len(model.inputs) == 2
+    
     # Get model predictions
-    if X_meta is not None:
+    if is_bilateral:
+        # For bilateral models
+        X_left, X_right = X_ts
+        pred_injured = model.predict([X_left[injured_idx:injured_idx+1], X_right[injured_idx:injured_idx+1]])[0, 0]
+        pred_healthy = model.predict([X_left[healthy_idx:healthy_idx+1], X_right[healthy_idx:healthy_idx+1]])[0, 0]
+    elif X_meta is not None:
+        # For single timeseries + metadata models
         pred_injured = model.predict([X_ts[injured_idx:injured_idx+1], X_meta[injured_idx:injured_idx+1]])[0, 0]
         pred_healthy = model.predict([X_ts[healthy_idx:healthy_idx+1], X_meta[healthy_idx:healthy_idx+1]])[0, 0]
     else:
+        # For single timeseries models
         pred_injured = model.predict(X_ts[injured_idx:injured_idx+1])[0, 0]
         pred_healthy = model.predict(X_ts[healthy_idx:healthy_idx+1])[0, 0]
     
@@ -366,32 +486,70 @@ def analyze_sample_saliency(model: tf.keras.Model,
     print(f"  Healthy sample (true=0): {pred_healthy:.4f}")
     
     # Compute saliency for both samples
-    injured_saliency = compute_timeseries_saliency(
-        model, X_ts[injured_idx:injured_idx+1], 
-        X_meta[injured_idx:injured_idx+1] if X_meta is not None else None,
-        target_class=None, method=method
-    )
+    if is_bilateral:
+        # For bilateral models
+        X_left, X_right = X_ts
+        injured_saliency = compute_timeseries_saliency(
+            model, [X_left[injured_idx:injured_idx+1], X_right[injured_idx:injured_idx+1]], 
+            target_class=None, method=method
+        )
+        
+        healthy_saliency = compute_timeseries_saliency(
+            model, [X_left[healthy_idx:healthy_idx+1], X_right[healthy_idx:healthy_idx+1]],
+            target_class=None, method=method
+        )
+    else:
+        # For single timeseries or timeseries + metadata models
+        injured_saliency = compute_timeseries_saliency(
+            model, X_ts[injured_idx:injured_idx+1], 
+            X_meta[injured_idx:injured_idx+1] if X_meta is not None else None,
+            target_class=None, method=method
+        )
+        
+        healthy_saliency = compute_timeseries_saliency(
+            model, X_ts[healthy_idx:healthy_idx+1],
+            X_meta[healthy_idx:healthy_idx+1] if X_meta is not None else None, 
+            target_class=None, method=method
+        )
     
-    healthy_saliency = compute_timeseries_saliency(
-        model, X_ts[healthy_idx:healthy_idx+1],
-        X_meta[healthy_idx:healthy_idx+1] if X_meta is not None else None, 
-        target_class=None, method=method
-    )
+    # For bilateral models, determine which saliency map to use based on channels
+    if is_bilateral and isinstance(injured_saliency, list):
+        # Check if channels are for left side (contain "L_") or right side (contain "R_")
+        if any("L_" in ch for ch in channels):
+            # Left side analysis
+            injured_saliency_plot = injured_saliency[0]  # Left saliency
+            healthy_saliency_plot = healthy_saliency[0]   # Left saliency
+            side_name = "Left"
+        elif any("R_" in ch for ch in channels):
+            # Right side analysis
+            injured_saliency_plot = injured_saliency[1]  # Right saliency
+            healthy_saliency_plot = healthy_saliency[1]   # Right saliency
+            side_name = "Right"
+        else:
+            # Default to left if unclear
+            injured_saliency_plot = injured_saliency[0]
+            healthy_saliency_plot = healthy_saliency[0]
+            side_name = "Left"
+    else:
+        # Single model or already processed
+        injured_saliency_plot = injured_saliency
+        healthy_saliency_plot = healthy_saliency
+        side_name = ""
     
     # Plot saliency for injured sample
-    print("\nPlotting saliency for injured sample...")
+    print(f"\nPlotting saliency for injured sample{' (' + side_name + ' side)' if side_name else ''}...")
     injured_top_idx, injured_importance = plot_timeseries_saliency(
-        injured_saliency, channels, sample_idx=0, top_k=top_k,
-        title=f"Injured Sample Saliency ({method.title()})",
-        save_path=f"{save_dir}/injured_sample_saliency.png" if save_dir else None
+        injured_saliency_plot, channels, sample_idx=0, top_k=top_k,
+        title=f"Injured Sample Saliency ({method.title()}){' - ' + side_name + ' Side' if side_name else ''}",
+        save_path=f"{save_dir}/injured_sample_saliency{'_' + side_name.lower() if side_name else ''}.png" if save_dir else None
     )
     
     # Plot saliency for healthy sample
-    print("\nPlotting saliency for healthy sample...")
+    print(f"\nPlotting saliency for healthy sample{' (' + side_name + ' side)' if side_name else ''}...")
     healthy_top_idx, healthy_importance = plot_timeseries_saliency(
-        healthy_saliency, channels, sample_idx=0, top_k=top_k,
-        title=f"Healthy Sample Saliency ({method.title()})",
-        save_path=f"{save_dir}/healthy_sample_saliency.png" if save_dir else None
+        healthy_saliency_plot, channels, sample_idx=0, top_k=top_k,
+        title=f"Healthy Sample Saliency ({method.title()}){' - ' + side_name + ' Side' if side_name else ''}",
+        save_path=f"{save_dir}/healthy_sample_saliency{'_' + side_name.lower() if side_name else ''}.png" if save_dir else None
     )
     
     # Print top features for each sample
@@ -405,18 +563,31 @@ def analyze_sample_saliency(model: tf.keras.Model,
     for i, idx in enumerate(top_healthy):
         print(f"  {i+1}. {channels[idx]}: {healthy_importance[idx]:.4f}")
     
-    return {
+    # Prepare return dictionary
+    result = {
         'injured_idx': injured_idx,
         'healthy_idx': healthy_idx,
         'injured_prediction': pred_injured,
         'healthy_prediction': pred_healthy,
-        'injured_saliency': injured_saliency,
-        'healthy_saliency': healthy_saliency,
+        'injured_saliency': injured_saliency_plot if is_bilateral and isinstance(injured_saliency, list) else injured_saliency,
+        'healthy_saliency': healthy_saliency_plot if is_bilateral and isinstance(healthy_saliency, list) else healthy_saliency,
         'injured_top_features': injured_top_idx,
         'healthy_top_features': healthy_top_idx,
         'injured_importance': injured_importance,
         'healthy_importance': healthy_importance
     }
+    
+    # Add bilateral-specific information
+    if is_bilateral:
+        result['is_bilateral'] = True
+        result['analyzed_side'] = side_name if isinstance(injured_saliency, list) else 'Both'
+        if isinstance(injured_saliency, list):
+            result['full_injured_saliency'] = injured_saliency  # Both left and right
+            result['full_healthy_saliency'] = healthy_saliency   # Both left and right
+    else:
+        result['is_bilateral'] = False
+    
+    return result
 
 
 class BasePredictor(ABC):
