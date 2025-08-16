@@ -3,10 +3,35 @@
 import json
 import pickle
 import tensorflow as tf
-from tensorflow.keras import layers as L, models as M
+from tensorflow.keras import layers as L, models as M, callbacks as C
 import keras_tuner as kt
 from typing import Callable, Optional, Dict, Any, List, Tuple
 from pathlib import Path
+
+
+def summarize_best_N_models(num_models: int = 5, tuner: kt.Hyperband = None, metrics: List[str] = None):
+    """Summarizes the best N models."""
+    if tuner is None:
+        raise ValueError("Tuner is required to summarize the best models.")
+    
+    if metrics is None:
+        metrics = ["val_auc_pr", "val_auc_roc", "val_accuracy", "val_precision", "val_recall"]
+    
+    best_models = tuner.get_best_models(num_models=num_models)
+    best_trials = tuner.oracle.get_best_trials(num_trials=num_models)
+    best_hps = tuner.get_best_hyperparameters(num_trials=num_models)
+
+    for i, (m, hp, t) in enumerate(zip(best_models, best_hps, best_trials), 1):
+        print(f"\n=== Top {i} ===")
+        print(f"Scores:")
+        print("="*10)
+        for metric in metrics:
+            print(f"{metric}: {t.metrics.get_best_value(metric)}")
+        print("="*10)
+        for param in hp.values:
+            print(f"{param}: {hp.values[param]}")
+        m.summary()
+
 
 class MetaHyperModel(kt.HyperModel):
     def __init__(self, model_name: str, build_model_func: Callable, **kwargs):
@@ -46,6 +71,8 @@ class ModelLoader:
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self.meta_model = meta_model
         self.random_state = random_state
+        self.keras_model = None
+        self.keras_model_history = None
 
         self.tuner: kt.Hyperband = kt.Hyperband(
             self.meta_model,
@@ -74,21 +101,20 @@ class ModelLoader:
         best_hp = self.get_best_hyperparameters()
         return self.tuner.hypermodel.build(best_hp)
     
-    def get_best_trials(self, num_trials: int = 1) -> List[kt.Trial]:
+    def get_best_trials(self, num_trials: int = 1) -> List:
         """Get the best trials."""
         return self.tuner.oracle.get_best_trials(num_trials=num_trials)
 
     def get_best_results(self, metrics: List[str] = ["val_auc_pr", "val_auc_roc", "val_accuracy", "val_precision", "val_recall"]) -> List[Dict[str, Any]]:
         """Get the best results."""
-        best_trial = self.tuner.oracle.get_best_trials(num_trials=1)
+        best_trial = self.get_best_trials(num_trials=1)
         
         return {
             metric: best_trial[0].metrics.get_best_value(metric)
             for metric in metrics
         }
     
-    
-    def tune_and_train(self,X_intput, y, X_val, y_val, class_weight=None, epochs=100, batch_size=32, callbacks=None, verbose=1) -> M.Model:
+    def tune_and_train(self,X_intput, y, X_val, y_val, class_weight=None, epochs=100, batch_size=32, callbacks=None, verbose=1) -> C.History:
         """Tunes and trains the model."""
         self.tuner.search(X_intput, y,
                     validation_data=(X_val, y_val),
@@ -99,7 +125,7 @@ class ModelLoader:
                     verbose=verbose
                 )
         model = self.tuner.get_best_models(1)[0]
-        self.keras_model = model.fit(
+        self.keras_model_history = model.fit(
             X_intput, y, 
             validation_data=(X_val, y_val),
             epochs=epochs,
@@ -108,7 +134,8 @@ class ModelLoader:
             callbacks=callbacks,
             verbose=verbose,
         )
-        return self.keras_model
+        self.keras_model = self.keras_model_history.model
+        return self.keras_model_history
 
     def train_with_fixed_params(self, **kwargs):
         """Trains the model with fixed parameters.
@@ -126,19 +153,12 @@ class ModelLoader:
         
         self.tuner.hypermodel.build(hp_fixed) 
     
-    def save_keras_model_to_disk(self, model: M.Model = None):
+    def save_keras_model_to_disk(self):
         """Saves the model to disk."""
-        if model is None:
-            model = self.keras_model
-        if model is None:
-            raise ValueError("No model to save.")
-        
-        self.keras_model = model
-
         model_path = self.results_dir / "best_model.keras"        
-        model.save(model_path)
+        self.keras_model.save(model_path)
     
-    def load_keras_model_from_disk(self):
+    def load_keras_model_from_disk(self) -> Tuple[M.Model, Dict[str, Any]]:
         """Loads model and history from disk uwing the old logic."""
         model_path = self.results_dir / "best_model.keras"
         if not model_path.exists():
@@ -175,3 +195,5 @@ class ModelLoader:
     def load_scalers_from_disk(self) -> Dict[str, Any]:
         """Loads the scalers from disk."""
         scalers_path = self.results_dir / "scalers.pkl"
+        with open(scalers_path, "rb") as f:
+            return pickle.load(f)
