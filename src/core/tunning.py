@@ -7,7 +7,7 @@ from tensorflow.keras import layers as L, models as M, callbacks as C
 import keras_tuner as kt
 from typing import Callable, Optional, Dict, Any, List, Tuple
 from pathlib import Path
-
+import warnings
 
 def summarize_best_N_models(num_models: int = 5, tuner: kt.Hyperband = None, metrics: List[str] = None):
     """Summarizes the best N models."""
@@ -82,7 +82,10 @@ class ModelLoader:
         )
 
         # Reload in case there was a previous search.
-        self.tuner.reload()
+        try:
+            self.tuner.reload()
+        except Exception as e:
+            warnings.warn(f"No previous search found for {self.meta_model.model_name}")
     
     def get_tuner(self) -> kt.Hyperband:
         """Get the tuner."""
