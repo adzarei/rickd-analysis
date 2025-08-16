@@ -51,7 +51,7 @@ class MetaHyperModel(kt.HyperModel):
         Returns:
             M.Model: The model.
         """
-        return self.build_model_func(hp, self.model_name, **self.kwargs)
+        return self.build_model_func(hp=hp, model_name=self.model_name, **self.kwargs)
 
 
 class ModelLoader:
