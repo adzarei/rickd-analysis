@@ -27,7 +27,7 @@ from matplotlib.colors import LinearSegmentedColormap
 def pick_threshold(
     y_true: np.ndarray,
     y_score: np.ndarray,
-    method: str = "f1"
+    method: str = "macro"
 ) -> Tuple[float, dict]:
     """
     Pick the threshold that maximizes the F1-Score or macro F1-Score.
@@ -422,7 +422,7 @@ def plot_timeseries_saliency(saliency_map: np.ndarray,
 
 
 def analyze_sample_saliency(model: tf.keras.Model,
-                           X_ts,  # Can be np.ndarray or List[np.ndarray] for bilateral models
+                           X_ts,
                            y: np.ndarray,
                            channels: List[str],
                            X_meta: Optional[np.ndarray] = None,
@@ -435,7 +435,7 @@ def analyze_sample_saliency(model: tf.keras.Model,
     
     Args:
         model: Trained Keras model
-        X_ts: Timeseries test data (single array or list of two arrays for bilateral models)
+        X_ts: Timeseries test data (single array or list of two arrays for bilateral models or dict for multimodal models)
         y: Labels
         channels: Feature names
         X_meta: Optional metadata
@@ -465,6 +465,8 @@ def analyze_sample_saliency(model: tf.keras.Model,
     
     # Check if this is a bilateral model
     is_bilateral = isinstance(X_ts, list) and len(X_ts) == 2 and len(model.inputs) == 2
+
+    is_multimodal = isinstance(X_ts, dict) and len(X_ts) == 3 and len(model.inputs) == 3
     
     # Get model predictions
     if is_bilateral:
@@ -472,6 +474,14 @@ def analyze_sample_saliency(model: tf.keras.Model,
         X_left, X_right = X_ts
         pred_injured = model.predict([X_left[injured_idx:injured_idx+1], X_right[injured_idx:injured_idx+1]])[0, 0]
         pred_healthy = model.predict([X_left[healthy_idx:healthy_idx+1], X_right[healthy_idx:healthy_idx+1]])[0, 0]
+    elif is_multimodal:
+        # For multi-modal models
+        inputs = {}
+        for key in X_ts:
+            inputs[key] = X_ts[key][injured_idx:injured_idx+1]
+        
+        pred_injured = model.predict(inputs)[0, 0]
+        pred_healthy = model.predict(inputs)[0, 0]
     elif X_meta is not None:
         # For single timeseries + metadata models
         pred_injured = model.predict([X_ts[injured_idx:injured_idx+1], X_meta[injured_idx:injured_idx+1]])[0, 0]
@@ -685,6 +695,27 @@ class UnilateralPredictor(BasePredictor):
             return 0.5 * (y_pred_proba_left + y_pred_proba_right)
 
 
+class MultiModalPredictor(BasePredictor):
+    """Predictor for multi-modal models that take left and right inputs and metadata tabular data simultaneously."""
+    
+    def predict_proba(self, X_left: np.ndarray, X_right: np.ndarray, X_meta: np.ndarray) -> np.ndarray:
+        """Predict probabilities using bilateral inputs.
+        
+        Args:
+            X_left: Left side input data
+            X_right: Right side input data
+            X_meta: Metadata input data
+        Returns:
+            Array of prediction probabilities
+        """
+        inputs = {
+            "left": X_left,
+            "right": X_right,
+            "metadata": X_meta
+        }
+        return self.model.predict(inputs)
+
+
 def plot_confusion_matrix(y_true, y_pred, labels, name):
     """Plot confusion matrix.
     
@@ -727,13 +758,14 @@ def plot_roc_curve(y_true, y_pred_proba, name):
     )
     roc_disp.ax_.set_title('ROC Curve')
 
-def plot_precision_recall_curve(y_true, y_pred_proba, name):
+def plot_precision_recall_curve(y_true, y_pred_proba, name, test_prevalence):
     """Plot precision-recall curve.
     
     Args:
         y_true: True labels
         y_pred_proba: Predicted probabilities
         name: Name of the model
+        test_prevalence: Test prevalence
     """
     plt.figure()
     pr_disp = PrecisionRecallDisplay.from_predictions(
@@ -742,6 +774,10 @@ def plot_precision_recall_curve(y_true, y_pred_proba, name):
         name=name
     )
     pr_disp.ax_.set_title('Precision-Recall Curve')
+    baseline_label = f'Baseline (prevalence = {test_prevalence:.2f})'
+    pr_disp.ax_.axhline(y=test_prevalence, linestyle='--', color='gray', label=baseline_label)
+    pr_disp.ax_.autoscale(tight=True)
+    pr_disp.ax_.legend()
 
 
 def model_test_summary(model: tf.keras.Model,
@@ -759,14 +795,18 @@ def model_test_summary(model: tf.keras.Model,
         threshold: Decision threshold
         predictor: implementation of BasePredictor
     """
-    if predictor is None:
-        predictor = BilateralPredictor(model)
     
-    y_pred_proba = predictor.predict_proba(*inputs)
+    # Handle different types of inputs: list/tuple, dict, or single element
+    if isinstance(inputs, dict):
+        y_pred_proba = predictor.predict_proba(**inputs)
+    elif isinstance(inputs, (list, tuple)):
+        y_pred_proba = predictor.predict_proba(*inputs)
+    else:
+        y_pred_proba = predictor.predict_proba(inputs)
     y_pred = predictor.predict(threshold, *inputs)
     
     test_accuracy = accuracy_score(y_true, y_pred)
-    test_f1 = f1_score(y_true, y_pred)
+    test_f1 = f1_score(y_true, y_pred, average="macro")
     test_avg_precision = average_precision_score(y_true, y_pred_proba)
     test_precision = precision_score(y_true, y_pred)
     test_recall = recall_score(y_true, y_pred)
@@ -784,7 +824,7 @@ def model_test_summary(model: tf.keras.Model,
     print(f"=== Threshold: {threshold:.2f} ===")
     print("="*50)
     print(f"Test Accuracy : {test_accuracy:.4f}")
-    print(f"Test F1 Score : {test_f1:.4f}")
+    print(f"Test F1-Macro Score : {test_f1:.4f}")
     print(f"Test Precision : {test_precision:.4f}")
     print(f"Test Recall : {test_recall:.4f}")
 
@@ -793,7 +833,7 @@ def model_test_summary(model: tf.keras.Model,
 
     plot_confusion_matrix(y_true, y_pred, labels=['Injured', 'Not Injured'], name=model.name)
     plot_roc_curve(y_true, y_pred_proba, name=model.name)
-    plot_precision_recall_curve(y_true, y_pred_proba, name=model.name)
+    plot_precision_recall_curve(y_true, y_pred_proba, name=model.name, test_prevalence=test_prevalence)
 
     return {
         "accuracy": test_accuracy,
