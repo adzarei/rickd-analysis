@@ -65,6 +65,7 @@ class ModelLoader:
         objective: kt.Objective = kt.Objective("val_auc_pr", direction="max"),
         max_epochs: int = 70,
         factor: int = 3,
+        overwrite: bool = False
     ):
         """Initialize ModelLoader."""
         self.results_dir = Path(results_dir)
@@ -78,7 +79,8 @@ class ModelLoader:
             self.meta_model,
             objective=objective,
             max_epochs=max_epochs, factor=factor, seed=self.random_state,
-            directory="tune", project_name=self.meta_model.model_name
+            directory="tune", project_name=self.meta_model.model_name,
+            overwrite=overwrite
         )
 
         # Reload in case there was a previous search.
@@ -117,25 +119,26 @@ class ModelLoader:
             for metric in metrics
         }
     
-    def tune_and_train(self,X_intput, y, X_val, y_val, class_weight=None, epochs=100, batch_size=32, callbacks=None, verbose=1) -> C.History:
+    def tune_and_train(self, X_input, y, X_val, y_val, class_weight=None, epochs=100, batch_size=32, callbacks=None, verbose=1) -> C.History:
         """Tunes and trains the model."""
-        self.tuner.search(X_intput, y,
+        self.tuner.search(X_input, y,
                     validation_data=(X_val, y_val),
                     class_weight=class_weight,
                     epochs=epochs,
                     batch_size=batch_size,
                     callbacks=callbacks,
-                    verbose=verbose
+                    verbose=verbose,
                 )
         model = self.tuner.get_best_models(1)[0]
         self.keras_model_history = model.fit(
-            X_intput, y, 
+            X_input, y, 
             validation_data=(X_val, y_val),
             epochs=epochs,
             batch_size=batch_size,
             class_weight=class_weight,
             callbacks=callbacks,
             verbose=verbose,
+
         )
         self.keras_model = self.keras_model_history.model
         return self.keras_model_history

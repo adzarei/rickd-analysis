@@ -32,12 +32,11 @@ kineticstoolkit = "^0.16.4"
 dtw-python = "^1.5.3"
 feature-engine = "^1.8.3"
 imbalanced-learn = "^0.13.0"
-tensorflow = "^2.19.0"
 shap = "^0.48.0"
 lime = "^0.2.0.1"
 keras-tuner = "^1.4.7"
 xgboost = "^3.0.4"
-tensorboard = "^2.20.0"
+tensorflow = "==2.19.*"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.0.0"
