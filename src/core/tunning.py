@@ -65,7 +65,9 @@ class ModelLoader:
         objective: kt.Objective = kt.Objective("val_auc_pr", direction="max"),
         max_epochs: int = 70,
         factor: int = 3,
-        overwrite: bool = False
+        overwrite: bool = False,
+        hyperband_iterations: int = 2,
+        **kwargs
     ):
         """Initialize ModelLoader."""
         self.results_dir = Path(results_dir)
@@ -80,7 +82,9 @@ class ModelLoader:
             objective=objective,
             max_epochs=max_epochs, factor=factor, seed=self.random_state,
             directory="tune", project_name=self.meta_model.model_name,
-            overwrite=overwrite
+            overwrite=overwrite,
+            hyperband_iterations=hyperband_iterations,
+            **kwargs
         )
 
         # Reload in case there was a previous search.

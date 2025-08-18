@@ -716,6 +716,21 @@ class MultiModalPredictor(BasePredictor):
         return self.model.predict(inputs)
 
 
+class BilateralSingleInputPredictor(BasePredictor):
+    """Predictor for bilateral models that take left and right inputs simultaneously."""
+    
+    def predict_proba(self, X_ts: np.ndarray) -> np.ndarray:
+        """Predict probabilities using bilateral inputs.
+        
+        Args:
+            X_ts: Input data
+            
+        Returns:
+            Array of prediction probabilities
+        """
+        return self.model.predict([X_ts])
+
+
 def plot_confusion_matrix(y_true, y_pred, labels, name):
     """Plot confusion matrix.
     
@@ -799,12 +814,14 @@ def model_test_summary(model: tf.keras.Model,
     # Handle different types of inputs: list/tuple, dict, or single element
     if isinstance(inputs, dict):
         y_pred_proba = predictor.predict_proba(**inputs)
+        y_pred = predictor.predict(threshold, **inputs)
     elif isinstance(inputs, (list, tuple)):
         y_pred_proba = predictor.predict_proba(*inputs)
+        y_pred = predictor.predict(threshold, *inputs)
     else:
         y_pred_proba = predictor.predict_proba(inputs)
-    y_pred = predictor.predict(threshold, *inputs)
-    
+        y_pred = predictor.predict(threshold, inputs)
+
     test_accuracy = accuracy_score(y_true, y_pred)
     test_f1 = f1_score(y_true, y_pred, average="macro")
     test_avg_precision = average_precision_score(y_true, y_pred_proba)

@@ -37,6 +37,7 @@ lime = "^0.2.0.1"
 keras-tuner = "^1.4.7"
 xgboost = "^3.0.4"
 tensorflow = "==2.19.*"
+tensorflow-metal = "^1.2.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.0.0"
