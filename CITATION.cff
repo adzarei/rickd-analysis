@@ -1,0 +1,25 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Running Injury Clinic Kinematic Dataset (RICKD) Analysis
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Adrian Jose
+    family-names: Zapater Reig
+    email: adrianzapater@gmail.com
+repository-code: 'https://github.com/adzarei/rickd-analysis'
+abstract: >-
+  This project contains analysis notebooks and scripts for
+  the RICKD project.
+keywords:
+  - biomechanics
+  - machine learning
+  - deep learning
+  - kinematics
+  - gait analysis
+  - injury detection
+license: MIT

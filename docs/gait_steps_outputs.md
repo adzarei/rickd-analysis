@@ -205,7 +205,7 @@ event = [L_TD, L_Midstance, L_TO, L_heelwhip, R_TD, R_Midstance, R_TO, R_heelwhi
 - [POPULATED] Row 75: Hip adduction peak velocity (°/s)
 - [POPULATED] Row 76: Pelvic drop peak velocity (°/s)
 
-#### Specialized Variables (Rows 73-74, 77) - ALL POPULATED
+#### Other Variables (Rows 73-74, 77) - ALL POPULATED
 - [POPULATED] Row 73: Pronation onset timing (%stance)
 - [POPULATED] Row 74: Supination timing (%stance)
 - [POPULATED] Row 77: Vertical oscillation (mm)
