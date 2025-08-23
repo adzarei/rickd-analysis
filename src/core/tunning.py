@@ -9,7 +9,7 @@ from typing import Callable, Optional, Dict, Any, List, Tuple
 from pathlib import Path
 import warnings
 
-def summarize_best_N_models(num_models: int = 5, tuner: kt.Hyperband = None, metrics: List[str] = None):
+def summarize_best_N_models(num_models: int = 5, tuner: kt.Hyperband = None, metrics: List[str] = None, model_summary: bool = True):
     """Summarizes the best N models."""
     if tuner is None:
         raise ValueError("Tuner is required to summarize the best models.")
@@ -30,7 +30,8 @@ def summarize_best_N_models(num_models: int = 5, tuner: kt.Hyperband = None, met
         print("="*10)
         for param in hp.values:
             print(f"{param}: {hp.values[param]}")
-        m.summary()
+        if model_summary:
+            m.summary()
 
 
 class MetaHyperModel(kt.HyperModel):
@@ -123,7 +124,7 @@ class ModelLoader:
             for metric in metrics
         }
     
-    def tune_and_train(self, X_input, y, X_val, y_val, class_weight=None, epochs=100, batch_size=32, callbacks=None, verbose=1) -> C.History:
+    def tune_and_train(self, X_input, y, X_val, y_val, class_weight=None, epochs=100, batch_size=32, callbacks=None, verbose=1, train_callbacks=None) -> C.History:
         """Tunes and trains the model."""
         self.tuner.search(X_input, y,
                     validation_data=(X_val, y_val),
@@ -133,16 +134,22 @@ class ModelLoader:
                     callbacks=callbacks,
                     verbose=verbose,
                 )
-        model = self.tuner.get_best_models(1)[0]
+        best_hps = self.tuner.get_best_hyperparameters(num_trials=1)[0]
+        model = self.tuner.hypermodel.build(best_hps)
+
+        # Sometimes you want to pass a different set of callbacks to the training
+        # than the ones used for the tuning.
+        if train_callbacks is None:
+            train_callbacks = callbacks
+
         self.keras_model_history = model.fit(
             X_input, y, 
             validation_data=(X_val, y_val),
             epochs=epochs,
             batch_size=batch_size,
             class_weight=class_weight,
-            callbacks=callbacks,
+            callbacks=train_callbacks,
             verbose=verbose,
-
         )
         self.keras_model = self.keras_model_history.model
         return self.keras_model_history
