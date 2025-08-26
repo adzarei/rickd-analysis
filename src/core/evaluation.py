@@ -21,6 +21,8 @@ from sklearn.metrics import (
     PrecisionRecallDisplay,
 )
 
+from sklearn.base import ClassifierMixin
+
 import tensorflow as tf
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -730,6 +732,20 @@ class BilateralSingleInputPredictor(BasePredictor):
         """
         return self.model.predict([X_ts])
 
+class SklearnAPIPredictor(BasePredictor):
+    """Predictor for single input models."""
+    
+    def predict_proba(self, X_ts: np.ndarray) -> np.ndarray:
+        """Predict probabilities using sklearn API.
+        
+        Args:
+            X: Input data
+            
+        Returns:
+            Array of prediction probabilities
+        """
+        return self.model.predict_proba(X_ts)[:, 1] # Keep only the probability of the positive class
+
 
 def plot_confusion_matrix(y_true, y_pred, labels, name):
     """Plot confusion matrix.
@@ -795,11 +811,13 @@ def plot_precision_recall_curve(y_true, y_pred_proba, name, test_prevalence):
     pr_disp.ax_.legend()
 
 
-def model_test_summary(model: tf.keras.Model,
+def model_test_summary(model: tf.keras.Model | ClassifierMixin,
                         inputs: Any,
                         y_true: np.ndarray,
                         threshold: float = 0.5,
                         predictor: BasePredictor = None,
+                        model_name: str = None,
+                        save_predictions: bool = False,
                     ) -> None:
     """Plot test results for a model.
     
@@ -830,6 +848,9 @@ def model_test_summary(model: tf.keras.Model,
     test_auc_roc = roc_auc_score(y_true, y_pred_proba)
     test_prevalence = np.mean(y_true == 1)
 
+    if model_name is None:
+        model_name = model.name if hasattr(model, "name") else model.__class__.__name__
+
     print("="*50)
     print("MODEL EVALUATION RESULTS")
     print("="*50)
@@ -848,11 +869,11 @@ def model_test_summary(model: tf.keras.Model,
     print("\n=== CLASSIFICATION REPORT ===")
     print(classification_report(y_true, y_pred, labels=[1,0], target_names=['Injured', 'Not Injured']))
 
-    plot_confusion_matrix(y_true, y_pred, labels=['Injured', 'Not Injured'], name=model.name)
-    plot_roc_curve(y_true, y_pred_proba, name=model.name)
-    plot_precision_recall_curve(y_true, y_pred_proba, name=model.name, test_prevalence=test_prevalence)
+    plot_confusion_matrix(y_true, y_pred, labels=['Injured', 'Not Injured'], name=model_name)
+    plot_roc_curve(y_true, y_pred_proba, name=model_name)
+    plot_precision_recall_curve(y_true, y_pred_proba, name=model_name, test_prevalence=test_prevalence)
 
-    return {
+    result = {
         "accuracy": test_accuracy,
         "f1": test_f1,
         "precision": test_precision,
@@ -860,5 +881,12 @@ def model_test_summary(model: tf.keras.Model,
         "auc_roc": test_auc_roc,
         "auc_pr": test_avg_precision,
         "prevalence": test_prevalence,
-        "threshold": threshold,
+        "threshold": threshold
     }
+
+    if save_predictions:
+        result["y_pred_proba"] = y_pred_proba
+        result["y_pred"] = y_pred
+        
+
+    return result

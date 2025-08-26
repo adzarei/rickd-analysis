@@ -156,6 +156,9 @@ class MatlabDataLoader:
             if 'id' not in m_full.columns:
                 raise KeyError("Expected column 'id' in metadata for joining.")
             
+            # Edge case identifier in 02_eda...ipynb, subject 200375 is two people with the same ID.
+            if 'ID' in d_full.columns:
+                d_full.loc[d_full['ID'] == '200375_20140502T074159', 'ID'] = '300375_20140502T074159'
             # Fail if column conflict. TODO: Handle edge case...
             self._discrete_with_metadata_cache = d_full.merge(m_full, left_on='ID', right_on='id', how='inner', suffixes=(False, False))
 
