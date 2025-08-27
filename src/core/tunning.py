@@ -28,8 +28,7 @@ def summarize_best_N_models(num_models: int = 5, tuner: kt.Hyperband = None, met
         for metric in metrics:
             print(f"{metric}: {t.metrics.get_best_value(metric)}")
         print("="*10)
-        for param in hp.values:
-            print(f"{param}: {hp.values[param]}")
+        print_best_hyperparameters(hp)
         if model_summary:
             m.summary()
 
@@ -63,7 +62,7 @@ class ModelLoader:
         meta_model: MetaHyperModel,
         results_dir: Path,
         random_state: int = 42,
-        objective: kt.Objective = kt.Objective("val_auc_pr", direction="max"),
+        objective: kt.Objective = kt.Objective("val_auc_roc", direction="max"),
         max_epochs: int = 70,
         factor: int = 3,
         overwrite: bool = False,
@@ -135,6 +134,7 @@ class ModelLoader:
                     verbose=verbose,
                 )
         best_hps = self.tuner.get_best_hyperparameters(num_trials=1)[0]
+        print_best_hyperparameters(best_hps)
         model = self.tuner.hypermodel.build(best_hps)
 
         # Sometimes you want to pass a different set of callbacks to the training
@@ -214,3 +214,9 @@ class ModelLoader:
         scalers_path = self.results_dir / "scalers.pkl"
         with open(scalers_path, "rb") as f:
             return pickle.load(f)
+
+
+def print_best_hyperparameters(best_hps: kt.HyperParameters):
+    """Prints the best hyperparameters."""
+    for param in best_hps.values:
+        print(f"{param}: {best_hps.values[param]}")
