@@ -122,6 +122,7 @@ def preprocess_features(
         feature_categorical_columns: List[str] = None,
         num_fill_value: float = None,
         cat_drop: str = "if_binary",
+        fited_scaler: StandardScaler = None,
         return_scaler: bool = False
     ) -> pd.DataFrame | Tuple[pd.DataFrame, StandardScaler]:
     """
@@ -166,9 +167,12 @@ def preprocess_features(
     X_imputed_df = pd.DataFrame(X_imputed, columns=imputer.get_feature_names_out(), index=X.index)
 
     # Step 2: Preprocessing (scaling and encoding)
+    # NOTE: If fitted scaler is provided, we use the provided one.
+    scaler = fited_scaler or StandardScaler()
+
     preprocessing = ColumnTransformer(
         transformers=[
-            ('scale_num', StandardScaler(), num_cols),
+            ('scale_num', scaler, num_cols),
             ('encode_cat', OneHotEncoder(drop=cat_drop, handle_unknown="ignore"), cat_cols)
         ],
         remainder='passthrough',

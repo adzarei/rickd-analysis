@@ -4,8 +4,11 @@ from typing import Tuple, List, Optional, Union, Any
 from abc import ABC, abstractmethod
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
     precision_recall_curve,
     balanced_accuracy_score,
@@ -24,7 +27,7 @@ from sklearn.metrics import (
 from sklearn.base import ClassifierMixin
 
 from sklearn.model_selection import StratifiedGroupKFold
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 import tensorflow as tf
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -1034,3 +1037,118 @@ def verify_splits(X_ts,X_ts_train, X_ts_val, X_ts_test, y_train, y_val, y_test, 
     print_class_distribution(y_val, "Val")
     print_class_distribution(y_test, "Test")
 
+
+
+def standardise_and_split(
+        X: pd.DataFrame,
+        Y: pd.Series,
+        groups: Any,
+        feature_categorical_columns: List[str] = None,
+        num_fill_value: float = None,
+        cat_drop: str = "if_binary",
+        test_size: float = 0.2,
+        val_size: float = 0.2,
+        random_state: int = 42,
+        shuffle: bool = True,
+        return_pipeline: bool = False,
+    ) -> Any:
+    """
+    Split X, Y into train/val/test with subject grouping and stratification and
+    apply leak-free preprocessing (imputation, one-hot encoding, scaling).
+
+    - Test is taken first from full data using StratifiedGroupKFold.
+    - Validation is taken from remaining train+val using StratifiedGroupKFold.
+    - Imputer and preprocessing (OHE + StandardScaler) are FIT on TRAIN ONLY.
+    - The same fitted transformers are used to transform val and test.
+
+    Args:
+        X: Feature dataframe
+        Y: Target series
+        groups: Group labels (e.g., subject IDs) for group-aware splitting
+        feature_categorical_columns: Optional explicit list of categorical columns
+        num_fill_value: Optional constant for numeric imputation (defaults to median if None)
+        cat_drop: OneHotEncoder drop policy (default: "if_binary")
+        test_size: Fraction for test split
+        val_size: Fraction for validation split (with respect to original dataset)
+        random_state: RNG seed
+        shuffle: Whether to shuffle before split
+        return_pipeline: If True, also return the fitted (imputer, preprocessing)
+
+    Returns:
+        Either:
+            (X_train_prep, X_val_prep, X_test_prep,
+             y_train, y_val, y_test,
+             groups_train, groups_val, groups_test)
+        Or if return_pipeline:
+            ((...same as above...), (imputer, preprocessing))
+    """
+    # Identify categorical and numerical columns
+    if feature_categorical_columns is not None:
+        cat_cols = feature_categorical_columns
+    else:
+        cat_cols = [c for c in X.columns if X[c].dtype == 'object']
+    num_cols = [c for c in X.columns if c not in cat_cols]
+
+    (
+        X_train, X_val, X_test,
+        y_train, y_val, y_test,
+        groups_train, groups_val, groups_test,
+    ) = stratified_group_train_val_test_split_ts(
+        X, Y, groups,
+        test_size=test_size,
+        val_size=val_size,
+        random_state=random_state,
+        shuffle=shuffle,
+    )
+
+    # NOTE: Imputation and preprocessing are fitted on train only to avoid leakage.
+    # Step 1: Imputation
+    imputer = ColumnTransformer(
+        transformers=[
+            ('impute_num', SimpleImputer(strategy='median', copy=True, fill_value=num_fill_value), num_cols),
+            ('impute_cat', SimpleImputer(strategy='constant', fill_value="unknown", copy=True), cat_cols),
+        ],
+        remainder='passthrough',
+        verbose_feature_names_out=False,
+    )
+    imputer.fit(X_train, y_train)
+
+    def _impute_to_df(X_part: pd.DataFrame, index_like) -> pd.DataFrame:
+        X_imp = imputer.transform(X_part)
+        return pd.DataFrame(X_imp, columns=imputer.get_feature_names_out(), index=index_like)
+
+    X_train_imp = _impute_to_df(X_train, X_train.index)
+    X_val_imp   = _impute_to_df(X_val, X_val.index)
+    X_test_imp  = _impute_to_df(X_test, X_test.index)
+
+    # Step 2: Preprocessing (scale nums + one-hot cats).
+    preprocessing = ColumnTransformer(
+        transformers=[
+            ('scale_num', StandardScaler(), num_cols),
+            ('encode_cat', OneHotEncoder(drop=cat_drop, handle_unknown="ignore"), cat_cols),
+        ],
+        remainder='passthrough',
+        verbose_feature_names_out=False,
+    )
+    preprocessing.fit(X_train_imp, y_train)
+
+    def _prep_to_df(X_imp_df: pd.DataFrame, index_like) -> pd.DataFrame:
+        X_prep = preprocessing.transform(X_imp_df)
+        X_df = pd.DataFrame(X_prep, columns=preprocessing.get_feature_names_out(), index=index_like)
+        # Drop imputation helper columns if present
+        unknown_cols_to_drop = [col + "_unknown" for col in cat_cols if col + "_unknown" in X_df.columns]
+        return X_df.drop(columns=unknown_cols_to_drop) if unknown_cols_to_drop else X_df
+
+    X_train_prep = _prep_to_df(X_train_imp, X_train.index)
+    X_val_prep   = _prep_to_df(X_val_imp, X_val.index)
+    X_test_prep  = _prep_to_df(X_test_imp, X_test.index)
+
+    result = (
+        X_train_prep, X_val_prep, X_test_prep,
+        y_train, y_val, y_test,
+        groups_train, groups_val, groups_test,
+    )
+
+    if return_pipeline:
+        return result, (imputer, preprocessing)
+    return result
