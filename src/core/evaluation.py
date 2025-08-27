@@ -23,6 +23,8 @@ from sklearn.metrics import (
 
 from sklearn.base import ClassifierMixin
 
+from sklearn.model_selection import StratifiedGroupKFold
+from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -890,3 +892,145 @@ def model_test_summary(model: tf.keras.Model | ClassifierMixin,
         
 
     return result
+
+
+def _take(a, idx):
+    return a.iloc[idx] if hasattr(a, "iloc") else a[idx]
+
+
+def stratified_group_train_val_test_split_ts(
+    X,
+    y,
+    groups,
+    test_size: float = 0.2,
+    val_size: float = 0.2,
+    random_state: int = 42,
+    shuffle: bool = True,
+) -> Tuple:
+    """Split X, y into train/val/test with subject grouping and stratification.
+
+    - Test is taken first from full data using StratifiedGroupKFold.
+    - Validation is taken from remaining train+val using StratifiedGroupKFold.
+    - ``val_size`` is interpreted as a fraction of the original dataset; it is
+      converted to a fraction of the remaining (1 - test_size).
+    """
+    assert 0 < test_size < 1 and 0 < val_size < 1 and test_size + val_size < 1
+
+    # Outer split: train_val vs test
+    n_splits_test = max(2, int(round(1.0 / test_size)))
+    sgkf_test = StratifiedGroupKFold(n_splits=n_splits_test, shuffle=shuffle, random_state=random_state)
+    train_val_idx, test_idx = next(sgkf_test.split(X, y, groups))
+
+    X_train_val, y_train_val, groups_train_val = _take(X, train_val_idx), _take(y, train_val_idx), _take(groups, train_val_idx)
+    X_test, y_test, groups_test = _take(X, test_idx), _take(y, test_idx), _take(groups, test_idx)
+
+    # Inner split on remaining: train vs val
+    val_size_relative = val_size / (1.0 - test_size)
+    n_splits_val = max(2, int(round(1.0 / val_size_relative)))
+    sgkf_val = StratifiedGroupKFold(n_splits=n_splits_val, shuffle=shuffle, random_state=random_state)
+    train_idx, val_idx = next(sgkf_val.split(X_train_val, y_train_val, groups_train_val))
+
+    X_train, y_train, groups_train = _take(X_train_val, train_idx), _take(y_train_val, train_idx), _take(groups_train_val, train_idx)
+    X_val, y_val, groups_val = _take(X_train_val, val_idx), _take(y_train_val, val_idx), _take(groups_train_val, val_idx)
+
+    return (
+        X_train, X_val, X_test,
+        y_train, y_val, y_test,
+        groups_train, groups_val, groups_test,
+    )
+
+
+def _standardise(X_ts, scaler_ts):
+    """Standardise timeseries data."""
+    N, T, C = X_ts.shape
+    X_ts_reshaped = X_ts.reshape(-1, C)
+    X_ts_scaled = scaler_ts.transform(X_ts_reshaped).reshape(N, T, C).astype(np.float32)
+    return X_ts_scaled
+
+def standardise_and_split_ts(X_ts, y, groups, test_size: float = 0.2, val_size: float = 0.2, random_state: int = 42, shuffle: bool = True) -> Tuple:
+    """Standardise and split data into train/val/test with subject grouping and stratification.
+
+    - Test is taken first from full data using StratifiedGroupKFold.
+    - Validation is taken from remaining train+val using StratifiedGroupKFold.
+    - ``val_size`` is interpreted as a fraction of the original dataset; it is
+      converted to a fraction of the remaining (1 - test_size).
+    
+    Returns:
+        Tuple:
+            - X_ts_train_scaled: Standardised train data
+            - X_ts_val_scaled: Standardised validation data
+            - X_ts_test_scaled: Standardised test data
+            - y_train: Standardised train labels
+            - y_val: Standardised validation labels
+            - y_test: Standardised test labels
+            - subject_train: Standardised train subject IDs
+            - subject_val: Standardised validation subject IDs
+            - subject_test: Standardised test subject IDs
+        - scaler_ts: Scaler object
+    """
+    (
+    X_ts_train, X_ts_val, X_ts_test,
+    y_train, y_val, y_test,
+    subject_train, subject_val, subject_test,
+    ) = stratified_group_train_val_test_split_ts(
+        X_ts, y, groups, test_size=test_size, val_size=val_size, random_state=random_state, shuffle=shuffle
+    )
+
+    # Fit scaler on train data
+    scaler_ts = StandardScaler()
+    _, _, C = X_ts_train.shape
+    scaler_ts.fit(X_ts_train.reshape(-1, C))
+
+    # Transform all data
+    X_ts_train_scaled = _standardise(X_ts_train, scaler_ts)
+    X_ts_val_scaled = _standardise(X_ts_val, scaler_ts)
+    X_ts_test_scaled = _standardise(X_ts_test, scaler_ts)
+
+    return (
+        X_ts_train_scaled, X_ts_val_scaled, X_ts_test_scaled,
+        y_train, y_val, y_test,
+        subject_train, subject_val, subject_test,
+    ), scaler_ts
+
+
+def verify_splits(X_ts,X_ts_train, X_ts_val, X_ts_test, y_train, y_val, y_test, subject_train, subject_val, subject_test):
+    """Verify that the splits are correct."""
+    print("\nVerifying splits...")
+    print("="*50)
+
+    # Check that there is no overlap in groups (subject_id) between splits
+    train_groups_set = set(subject_train)
+    val_groups_set = set(subject_val)
+    test_groups_set = set(subject_test)
+
+    overlap_train_val = train_groups_set & val_groups_set
+    overlap_train_test = train_groups_set & test_groups_set
+    overlap_val_test = val_groups_set & test_groups_set
+
+    print(f"Overlap between train and val groups: {overlap_train_val}")
+    print(f"Overlap between train and test groups: {overlap_train_test}")
+    print(f"Overlap between val and test groups: {overlap_val_test}")
+
+    assert len(overlap_train_val) == 0, "Train and Val groups overlap!"
+    assert len(overlap_train_test) == 0, "Train and Test groups overlap!"
+    assert len(overlap_val_test) == 0, "Val and Test groups overlap!"
+
+    # Check that the total number of samples matches the original
+    n_total = len(X_ts)
+    n_split = len(X_ts_train) + len(X_ts_val) + len(X_ts_test)
+    print(f"Total samples: {n_total}, Sum of splits: {n_split}")
+    assert n_total == n_split, "Total number of samples does not match after split!"
+
+    # Check class distribution in each split
+    def print_class_distribution(y, name):
+        unique, counts = np.unique(y, return_counts=True)
+        total = counts.sum()
+        dist = {k: (v, 100.0 * v / total) for k, v in zip(unique, counts)}
+        print(f"{name} class distribution:")
+        for cls, (count, pct) in dist.items():
+            print(f"  Class {cls}: {count} ({pct:.2f}%)")
+
+    print_class_distribution(y_train, "Train")
+    print_class_distribution(y_val, "Val")
+    print_class_distribution(y_test, "Test")
+
