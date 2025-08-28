@@ -1045,7 +1045,7 @@ def standardise_and_split(
         groups: Any,
         feature_categorical_columns: List[str] = None,
         num_fill_value: float = None,
-        cat_drop: str = "if_binary",
+        cat_drop: str = None,
         test_size: float = 0.2,
         val_size: float = 0.2,
         random_state: int = 42,
