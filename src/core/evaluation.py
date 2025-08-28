@@ -121,7 +121,7 @@ def compute_timeseries_saliency(model: tf.keras.Model,
                  OR list of two arrays for bilateral models [left, right]
         meta_input: Optional metadata input array of shape (batch_size, meta_features)
         target_class: Class to compute gradients for (0 or 1), if None uses predicted class
-        method: Saliency method ('vanilla', 'integrated', 'grad_x_input')
+        method: Saliency method ('vanilla', 'grad_x_input')
     
     Returns:
         saliency_map: Gradient-based saliency map for timeseries input
@@ -136,23 +136,19 @@ def compute_timeseries_saliency(model: tf.keras.Model,
     if is_bilateral:
         if method == "vanilla":
             return _compute_vanilla_bilateral_saliency(model, ts_input, target_class)
-        elif method == "integrated":
-            return _compute_integrated_bilateral_saliency(model, ts_input, target_class)
         elif method == "grad_x_input":
             vanilla_grads = _compute_vanilla_bilateral_saliency(model, ts_input, target_class)
             return [grad * inp for grad, inp in zip(vanilla_grads, ts_input)]
         else:
-            raise ValueError(f"Unknown method: {method}. Choose from 'vanilla', 'integrated', 'grad_x_input'")
+            raise ValueError(f"Unknown method: {method}. Choose from 'vanilla', 'grad_x_input'")
     else:
         if method == "vanilla":
             return _compute_vanilla_timeseries_saliency(model, ts_input, meta_input, target_class, has_metadata)
-        elif method == "integrated":
-            return _compute_integrated_timeseries_saliency(model, ts_input, meta_input, target_class, has_metadata)
         elif method == "grad_x_input":
             vanilla_grads = _compute_vanilla_timeseries_saliency(model, ts_input, meta_input, target_class, has_metadata)
             return vanilla_grads * ts_input
         else:
-            raise ValueError(f"Unknown method: {method}. Choose from 'vanilla', 'integrated', 'grad_x_input'")
+            raise ValueError(f"Unknown method: {method}. Choose from 'vanilla', 'grad_x_input'")
 
 
 def _compute_vanilla_timeseries_saliency(model: tf.keras.Model,
@@ -199,67 +195,6 @@ def _compute_vanilla_timeseries_saliency(model: tf.keras.Model,
     return gradients.numpy()
 
 
-def _compute_integrated_timeseries_saliency(model: tf.keras.Model,
-                                           ts_input: np.ndarray,
-                                           meta_input: Optional[np.ndarray],
-                                           target_class: Optional[int],
-                                           has_metadata: bool,
-                                           m_steps: int = 50) -> np.ndarray:
-    """Internal function for integrated gradient computation."""
-    # Use zero baseline
-    baseline = np.zeros_like(ts_input)
-    
-    # Convert to tensors
-    ts_input_tf = tf.convert_to_tensor(ts_input.astype(np.float32), dtype=tf.float32)
-    baseline_tf = tf.convert_to_tensor(baseline.astype(np.float32), dtype=tf.float32)
-    
-    if has_metadata:
-        meta_tensor = tf.constant(meta_input.astype(np.float32), dtype=tf.float32)
-    
-    # Generate alphas
-    alphas = tf.linspace(0.0, 1.0, m_steps + 1)
-    
-    # Initialize integrated gradients
-    integrated_grads = tf.zeros_like(ts_input_tf)
-    
-    for alpha in alphas:
-        interpolated = baseline_tf + alpha * (ts_input_tf - baseline_tf)
-        
-        with tf.GradientTape() as tape:
-            tape.watch(interpolated)
-            
-            if has_metadata:
-                model_inputs = [interpolated, meta_tensor]
-            else:
-                model_inputs = interpolated
-                
-            predictions = model(model_inputs)
-            
-            if target_class is None:
-                # Use predicted class
-                if len(predictions.shape) > 1 and predictions.shape[1] > 1:
-                    target_scores = tf.reduce_max(predictions, axis=1)
-                else:
-                    target_scores = tf.squeeze(predictions)
-            else:
-                # Use specified class
-                if len(predictions.shape) > 1 and predictions.shape[1] > 1:
-                    target_scores = predictions[:, target_class]
-                else:
-                    if target_class == 1:
-                        target_scores = tf.squeeze(predictions)
-                    else:
-                        target_scores = 1 - tf.squeeze(predictions)
-        
-        grads = tape.gradient(target_scores, interpolated)
-        integrated_grads += grads / m_steps
-    
-    # Scale by the input difference
-    integrated_grads *= (ts_input_tf - baseline_tf)
-    
-    return integrated_grads.numpy()
-
-
 def _compute_vanilla_bilateral_saliency(model: tf.keras.Model,
                                        ts_inputs: list,
                                        target_class: Optional[int]) -> list:
@@ -292,66 +227,6 @@ def _compute_vanilla_bilateral_saliency(model: tf.keras.Model,
     
     gradients = tape.gradient(target_scores, [left_tensor, right_tensor])
     return [grad.numpy() for grad in gradients]
-
-
-def _compute_integrated_bilateral_saliency(model: tf.keras.Model,
-                                          ts_inputs: list,
-                                          target_class: Optional[int],
-                                          m_steps: int = 50) -> list:
-    """Internal function for integrated gradient computation for bilateral models."""
-    left_input, right_input = ts_inputs
-    
-    # Use zero baselines
-    left_baseline = np.zeros_like(left_input)
-    right_baseline = np.zeros_like(right_input)
-    
-    # Convert to tensors
-    left_input_tf = tf.convert_to_tensor(left_input.astype(np.float32), dtype=tf.float32)
-    right_input_tf = tf.convert_to_tensor(right_input.astype(np.float32), dtype=tf.float32)
-    left_baseline_tf = tf.convert_to_tensor(left_baseline.astype(np.float32), dtype=tf.float32)
-    right_baseline_tf = tf.convert_to_tensor(right_baseline.astype(np.float32), dtype=tf.float32)
-    
-    # Generate alphas
-    alphas = tf.linspace(0.0, 1.0, m_steps + 1)
-    
-    # Initialize integrated gradients
-    left_integrated_grads = tf.zeros_like(left_input_tf)
-    right_integrated_grads = tf.zeros_like(right_input_tf)
-    
-    for alpha in alphas:
-        # Interpolate between baseline and input
-        left_interpolated = left_baseline_tf + alpha * (left_input_tf - left_baseline_tf)
-        right_interpolated = right_baseline_tf + alpha * (right_input_tf - right_baseline_tf)
-        
-        with tf.GradientTape() as tape:
-            tape.watch([left_interpolated, right_interpolated])
-            predictions = model([left_interpolated, right_interpolated])
-            
-            if target_class is None:
-                # Use predicted class
-                if len(predictions.shape) > 1 and predictions.shape[1] > 1:
-                    target_scores = tf.reduce_max(predictions, axis=1)
-                else:
-                    target_scores = tf.squeeze(predictions)
-            else:
-                # Use specified class
-                if len(predictions.shape) > 1 and predictions.shape[1] > 1:
-                    target_scores = predictions[:, target_class]
-                else:
-                    if target_class == 1:
-                        target_scores = tf.squeeze(predictions)
-                    else:
-                        target_scores = 1 - tf.squeeze(predictions)
-        
-        grads = tape.gradient(target_scores, [left_interpolated, right_interpolated])
-        left_integrated_grads += grads[0] / m_steps
-        right_integrated_grads += grads[1] / m_steps
-    
-    # Scale by input difference
-    left_integrated_grads *= (left_input_tf - left_baseline_tf)
-    right_integrated_grads *= (right_input_tf - right_baseline_tf)
-    
-    return [left_integrated_grads.numpy(), right_integrated_grads.numpy()]
 
 
 def plot_timeseries_saliency(saliency_map: np.ndarray,
@@ -435,7 +310,7 @@ def analyze_sample_saliency(model: tf.keras.Model,
                            X_meta: Optional[np.ndarray] = None,
                            injured_idx: Optional[int] = None,
                            healthy_idx: Optional[int] = None,
-                           method: str = "integrated",
+                           method: str = "vanilla",
                            top_k: int = 10,
                            save_dir: Optional[str] = None) -> dict:
     """Analyze saliency for specific injured and healthy samples.
