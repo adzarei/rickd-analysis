@@ -38,6 +38,7 @@ keras-tuner = "^1.4.7"
 xgboost = "^3.0.4"
 tensorflow = "==2.19.*"
 tensorflow-metal = "^1.2.0"
+tf-keras-vis = "^0.8.7"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.0.0"

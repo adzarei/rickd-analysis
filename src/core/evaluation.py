@@ -123,6 +123,8 @@ def compute_timeseries_saliency(model: tf.keras.Model,
         target_class: Class to compute gradients for (0 or 1), if None uses predicted class
         method: Saliency method ('vanilla', 'grad_x_input')
     
+    See: https://www.analyticsvidhya.com/blog/2022/06/introduction-to-saliency-map-in-an-image-with-tensorflow-2-x-api/
+    
     Returns:
         saliency_map: Gradient-based saliency map for timeseries input
                      For bilateral models, returns list of saliency maps [left_saliency, right_saliency]

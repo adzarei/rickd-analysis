@@ -840,6 +840,24 @@ files = [
 ]
 
 [[package]]
+name = "deprecated"
+version = "1.2.18"
+description = "Python @deprecated decorator to deprecate old python classes, functions or methods."
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
+groups = ["main"]
+files = [
+    {file = "Deprecated-1.2.18-py2.py3-none-any.whl", hash = "sha256:bd5011788200372a32418f888e326a09ff80d0214bd961147cfed01b5c018eec"},
+    {file = "deprecated-1.2.18.tar.gz", hash = "sha256:422b6f6d859da6f2ef57857761bfb392480502a64c3028ca9bbe86085d72115d"},
+]
+
+[package.dependencies]
+wrapt = ">=1.10,<2"
+
+[package.extras]
+dev = ["PyTest", "PyTest-Cov", "bump2version (<1)", "setuptools ; python_version >= \"3.12\"", "tox"]
+
+[[package]]
 name = "distlib"
 version = "0.3.9"
 description = "Distribution utilities"
@@ -4829,6 +4847,30 @@ test = ["pre-commit", "pytest (>=7.0)", "pytest-timeout"]
 typing = ["mypy (>=1.6,<2.0)", "traitlets (>=5.11.1)"]
 
 [[package]]
+name = "tf-keras-vis"
+version = "0.8.7"
+description = "Neural network visualization toolkit for tf.keras"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "tf-keras-vis-0.8.7.tar.gz", hash = "sha256:64ac1d1c46e9ef8dda036951cae62b494c49106817ba03e7c98e77c66bc4fe02"},
+    {file = "tf_keras_vis-0.8.7-py3-none-any.whl", hash = "sha256:8313771e9c62f50f2cdbfa8b6d9b23c1aa52c5ec408dccf5b4f02bfd257b04fd"},
+]
+
+[package.dependencies]
+deprecated = "*"
+imageio = "*"
+packaging = "*"
+pillow = "*"
+scipy = "*"
+
+[package.extras]
+develop = ["flake8", "flake8-docstrings", "isort", "pytest", "pytest-cov", "pytest-env", "pytest-pycodestyle", "pytest-xdist", "yapf"]
+docs = ["myst-parser", "nbsphinx", "pandoc", "sphinx", "sphinx-autobuild", "sphinx-rtd-theme"]
+examples = ["jupyterlab", "matplotlib"]
+
+[[package]]
 name = "threadpoolctl"
 version = "3.6.0"
 description = "threadpoolctl"
@@ -5286,4 +5328,4 @@ scikit-learn = ["scikit-learn"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.11"
-content-hash = "37e11404f969f9f23c09c6980779e98b40ca9454894b278b376f0160dfc17339"
+content-hash = "b45f3328680000ef26ae9b46849b08594e90d59e3eb703aca44b8582b9b31a97"
